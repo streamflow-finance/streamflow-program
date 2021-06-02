@@ -215,14 +215,14 @@ fn cancel_stream(_pid: &Pubkey, accounts: &[AccountInfo], _ix: &[u8]) -> Program
 }
 
 pub fn process_instruction(
-    _program_id: &Pubkey,
+    program_id: &Pubkey,
     accounts: &[AccountInfo],
-    _instruction_data: &[u8],
+    instruction_data: &[u8],
 ) -> ProgramResult {
-    match _instruction_data[0] {
-        0 => initialize_stream(_program_id, accounts, _instruction_data),
-        1 => withdraw_unlocked(_program_id, accounts, _instruction_data),
-        2 => cancel_stream(_program_id, accounts, _instruction_data),
+    match instruction_data[0] {
+        0 => initialize_stream(program_id, accounts, instruction_data),
+        1 => withdraw_unlocked(program_id, accounts, instruction_data),
+        2 => cancel_stream(program_id, accounts, instruction_data),
         _ => Err(ProgramError::InvalidArgument),
     }
 }

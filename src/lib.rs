@@ -12,6 +12,7 @@ use solana_program::{
 };
 use std::convert::TryInto;
 
+#[repr(C)]
 struct StreamFlow {
     start_time: u64,
     end_time: u64,

@@ -53,21 +53,33 @@ unsafe fn any_as_u8_slice<T: Sized>(p: &T) -> &[u8] {
     ::std::slice::from_raw_parts((p as *const T) as *const u8, ::std::mem::size_of::<T>())
 }
 
-fn pda_init_sanity(pda: &AccountInfo) -> ProgramResult {
+fn initialize_stream(pid: &Pubkey, accounts: &[AccountInfo], ix: &[u8]) -> ProgramResult {
+    let account_info_iter = &mut accounts.iter();
+
+    let alice = next_account_info(account_info_iter)?;
+    let bob = next_account_info(account_info_iter)?;
+    let pda = next_account_info(account_info_iter)?;
+    let system_program = next_account_info(account_info_iter)?;
+
+    if ix.len() != 17 {
+        return Err(ProgramError::InvalidInstructionData);
+    }
+
     if !pda.data_is_empty() {
-        msg!("ERROR: pda data is not empty, quitting");
         return Err(ProgramError::AccountAlreadyInitialized);
     }
 
-    if !pda.is_writable {
-        msg!("ERROR: pda is not writable, quitting");
+    if !alice.is_writable
+        || !bob.is_writable
+        || !pda.is_writable
+        || !alice.is_signer
+        || !pda.is_signer
+    {
         return Err(ProgramError::MissingRequiredSignature);
     }
 
-    Ok(())
-}
+    let mut sf = unpack_init_instruction(ix, alice.key, bob.key);
 
-fn init_struct_sanity(sf: &StreamFlow) -> ProgramResult {
     match Clock::get() {
         Ok(v) => {
             // TODO: Try on devnet
@@ -83,27 +95,9 @@ fn init_struct_sanity(sf: &StreamFlow) -> ProgramResult {
         Err(e) => return Err(e),
     }
 
-    Ok(())
-}
-
-fn initialize_stream(pid: &Pubkey, accounts: &[AccountInfo], ix: &[u8]) -> ProgramResult {
-    let account_info_iter = &mut accounts.iter();
-
-    let alice = next_account_info(account_info_iter)?;
-    let bob = next_account_info(account_info_iter)?;
-    let pda = next_account_info(account_info_iter)?;
-    let system_program = next_account_info(account_info_iter)?;
-
-    pda_init_sanity(pda)?;
-
-    if ix.len() != 17 {
-        return Err(ProgramError::InvalidInstructionData);
-    }
-
-    let mut sf = unpack_init_instruction(ix, alice.key, bob.key);
-    init_struct_sanity(&sf)?;
-
     let struct_size = std::mem::size_of::<StreamFlow>();
+    // TODO: make this rent-exempt so it's a one-time-payment
+    // And on the end, return what's left to alice.
     let rent_min = Rent::default().minimum_balance(struct_size);
 
     // TODO: Review exact amount
@@ -139,20 +133,27 @@ fn initialize_stream(pid: &Pubkey, accounts: &[AccountInfo], ix: &[u8]) -> Progr
     Ok(())
 }
 
-fn withdraw_unlocked(_pid: &Pubkey, accounts: &[AccountInfo], _ix: &[u8]) -> ProgramResult {
+fn withdraw_unlocked(_pid: &Pubkey, accounts: &[AccountInfo], ix: &[u8]) -> ProgramResult {
     let account_info_iter = &mut accounts.iter();
 
     let bob = next_account_info(account_info_iter)?;
     let pda = next_account_info(account_info_iter)?;
 
-    let data = pda.try_borrow_mut_data()?;
-    msg!("bytes: {:?}", &data);
-    let sf = unpack_account_data(&data);
+    if ix.len() != 9 {
+        return Err(ProgramError::InvalidInstructionData);
+    }
 
     if !bob.is_signer {
         msg!("ERROR: Bob didn't sign tx");
         return Err(ProgramError::MissingRequiredSignature);
     }
+
+    if pda.data_is_empty() {
+        return Err(ProgramError::UninitializedAccount);
+    }
+
+    let data = pda.try_borrow_mut_data()?;
+    let sf = unpack_account_data(&data);
 
     if bob.key.to_bytes() != sf.recipient {
         msg!("ERROR: bob.key != sf.recipient");

@@ -36,7 +36,7 @@ fn unpack_init_instruction(ix: &[u8], alice: &Pubkey, bob: &Pubkey) -> StreamFlo
     return sf;
 }
 
-fn unpack_instruction_data2(ix: &[u8]) -> StreamFlow {
+fn unpack_account_data(ix: &[u8]) -> StreamFlow {
     let sf = StreamFlow {
         start_time: i64::from_le_bytes(ix[0..8].try_into().unwrap()),
         end_time: i64::from_le_bytes(ix[8..16].try_into().unwrap()),
@@ -147,7 +147,7 @@ fn withdraw_unlocked(_pid: &Pubkey, accounts: &[AccountInfo], _ix: &[u8]) -> Pro
 
     let data = pda.try_borrow_mut_data()?;
     msg!("bytes: {:?}", &data);
-    let sf = unpack_instruction_data2(&data);
+    let sf = unpack_account_data(&data);
 
     if !bob.is_signer {
         msg!("ERROR: Bob didn't sign tx");

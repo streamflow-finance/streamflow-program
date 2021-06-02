@@ -179,6 +179,40 @@ fn withdraw_unlocked(_pid: &Pubkey, accounts: &[AccountInfo], _ix: &[u8]) -> Pro
     Ok(())
 }
 
+fn cancel_stream(_pid: &Pubkey, accounts: &[AccountInfo], _ix: &[u8]) -> ProgramResult {
+    let account_info_iter = &mut accounts.iter();
+
+    let alice = next_account_info(account_info_iter)?;
+    let pda = next_account_info(account_info_iter)?;
+
+    if !alice.is_signer {
+        msg!("ERROR: Alice didn't sign tx");
+        return Err(ProgramError::MissingRequiredSignature);
+    }
+
+    if pda.data_is_empty() {
+        msg!("pda data is empty");
+        return Err(ProgramError::UninitializedAccount);
+    }
+
+    let data = pda.try_borrow_mut_data()?;
+    msg!("bytes: {:?}", &data);
+    let sf = unpack_account_data(&data);
+
+    if alice.key.to_bytes() != sf.sender {
+        msg!("ERROR: alice.key != sf.sender");
+        return Err(ProgramError::InvalidArgument);
+    }
+
+    // Alice decides to cancel, and withdraws from the derived account,
+    // resulting in its purge.
+    let avail = pda.lamports();
+    **pda.try_borrow_mut_lamports()? -= avail;
+    **alice.try_borrow_mut_lamports()? += avail;
+
+    Ok(())
+}
+
 pub fn process_instruction(
     _program_id: &Pubkey,
     accounts: &[AccountInfo],
@@ -187,7 +221,7 @@ pub fn process_instruction(
     match _instruction_data[0] {
         0 => initialize_stream(_program_id, accounts, _instruction_data),
         1 => withdraw_unlocked(_program_id, accounts, _instruction_data),
-        // 2 => cancel_stream(_program_id, accounts, _instruction_data),
+        2 => cancel_stream(_program_id, accounts, _instruction_data),
         _ => Err(ProgramError::InvalidArgument),
     }
 }

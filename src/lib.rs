@@ -13,8 +13,8 @@ use solana_program::{
 use std::convert::TryInto;
 
 struct StreamFlow {
-    start_time: i64,
-    end_time: i64,
+    start_time: u64,
+    end_time: u64,
     amount: u64,
     withdrawn: u64,
     sender: [u8; 32],
@@ -25,8 +25,8 @@ entrypoint!(process_instruction);
 
 fn unpack_init_instruction(ix: &[u8], alice: &Pubkey, bob: &Pubkey) -> StreamFlow {
     let sf = StreamFlow {
-        start_time: i64::from(u32::from_le_bytes(ix[1..5].try_into().unwrap())),
-        end_time: i64::from(u32::from_le_bytes(ix[5..9].try_into().unwrap())),
+        start_time: u64::from(u32::from_le_bytes(ix[1..5].try_into().unwrap())),
+        end_time: u64::from(u32::from_le_bytes(ix[5..9].try_into().unwrap())),
         amount: u64::from_le_bytes(ix[9..17].try_into().unwrap()),
         withdrawn: 0,
         sender: alice.to_bytes(),
@@ -38,8 +38,8 @@ fn unpack_init_instruction(ix: &[u8], alice: &Pubkey, bob: &Pubkey) -> StreamFlo
 
 fn unpack_account_data(ix: &[u8]) -> StreamFlow {
     let sf = StreamFlow {
-        start_time: i64::from_le_bytes(ix[0..8].try_into().unwrap()),
-        end_time: i64::from_le_bytes(ix[8..16].try_into().unwrap()),
+        start_time: u64::from_le_bytes(ix[0..8].try_into().unwrap()),
+        end_time: u64::from_le_bytes(ix[8..16].try_into().unwrap()),
         amount: u64::from_le_bytes(ix[16..24].try_into().unwrap()),
         withdrawn: u64::from_le_bytes(ix[24..32].try_into().unwrap()),
         sender: ix[32..64].try_into().unwrap(),
@@ -82,12 +82,11 @@ fn initialize_stream(pid: &Pubkey, accounts: &[AccountInfo], ix: &[u8]) -> Progr
 
     match Clock::get() {
         Ok(v) => {
-            // TODO: Try on devnet
             msg!("SOLANATIME: {}", v.unix_timestamp);
-            msg!("STARTTIME: {}", sf.start_time);
-            msg!("ENDTIME: {}", sf.end_time);
-            msg!("DURATION: {}", sf.end_time - sf.start_time);
-            if sf.start_time < v.unix_timestamp || sf.start_time >= sf.end_time {
+            msg!("STARTTIME:  {}", sf.start_time);
+            msg!("ENDTIME:    {}", sf.end_time);
+            msg!("DURATION:   {}", sf.end_time - sf.start_time);
+            if sf.start_time < v.unix_timestamp as u64 || sf.start_time >= sf.end_time {
                 msg!("ERROR: Timestamps are incorrect");
                 return Err(ProgramError::InvalidArgument);
             }
@@ -96,8 +95,8 @@ fn initialize_stream(pid: &Pubkey, accounts: &[AccountInfo], ix: &[u8]) -> Progr
     }
 
     let struct_size = std::mem::size_of::<StreamFlow>();
-    // TODO: make this rent-exempt so it's a one-time-payment
-    // And on the end, return what's left to alice.
+    // TODO: make this rent-exempt rather than minimum_balance
+    // and on the end, return what's left to Alice.
     let rent_min = Rent::default().minimum_balance(struct_size);
 
     // TODO: Review exact amount
@@ -119,7 +118,7 @@ fn initialize_stream(pid: &Pubkey, accounts: &[AccountInfo], ix: &[u8]) -> Progr
     )?;
 
     // Send enough for one transaction to Bob, so Bob can do an initial
-    // withdraw without needing to have funds previously.
+    // withdraw without having previous funds on their account.
     // TODO: Calculate correct fees
     **pda.try_borrow_mut_lamports()? -= 5000;
     **bob.try_borrow_mut_lamports()? += 5000;
@@ -152,30 +151,51 @@ fn withdraw_unlocked(_pid: &Pubkey, accounts: &[AccountInfo], ix: &[u8]) -> Prog
         return Err(ProgramError::UninitializedAccount);
     }
 
-    let data = pda.try_borrow_mut_data()?;
-    let sf = unpack_account_data(&data);
+    let mut data = pda.try_borrow_mut_data()?;
+    let mut sf = unpack_account_data(&data);
 
     if bob.key.to_bytes() != sf.recipient {
         msg!("ERROR: bob.key != sf.recipient");
         return Err(ProgramError::InvalidArgument);
     }
 
-    // 18:41 amountStreamed = (now - startTime)/(endTime - startTime) * amount;
-    // 18:41 availableForWithdrawal = amountStreamed - lastWithdrawn;
-    // 18:41 lastWithdrawn = amountStreamed;
-    // -----
-    // let now = 0;
-    // match Clock::get() {
-    // Ok(v) => now = v,
-    // Err(e) => return Err(e),
-    // }
-    // let amount_unlocked = (now - sf.start_time) / (sf.end_time - sf.start_time) * sf.amount;
-    // let available = amount_unlocked - sf.withdrawn;
-    // sf.withdrawn += amount_unlocked;
+    let now: u64;
+    match Clock::get() {
+        Ok(v) => now = v.unix_timestamp as u64,
+        Err(e) => return Err(e),
+    }
 
-    let avail = pda.lamports();
-    **pda.try_borrow_mut_lamports()? -= avail;
-    **bob.try_borrow_mut_lamports()? += avail;
+    // This is valid float division, but we lose precision when going u64.
+    // The loss however should not matter, as in the end we will simply
+    // send everything that is remaining.
+    let amount_unlocked = (((now - sf.start_time) as f64) / ((sf.end_time - sf.start_time) as f64)
+        * sf.amount as f64) as u64;
+    let mut available = amount_unlocked - sf.withdrawn;
+
+    // In case we're past the set time, we will withdraw what's left.
+    // TODO: Send rent back to Alice.
+    if now >= sf.end_time {
+        available = sf.amount - sf.withdrawn;
+    }
+
+    msg!("SOLTIME:   {}", now);
+    msg!("STARTTIME: {}", sf.start_time);
+    msg!("ENDTIME:   {}", sf.end_time);
+    msg!("TOTAL:     {}", sf.amount);
+    msg!("UNLOCKED:  {}", amount_unlocked);
+    msg!("AVAILABLE: {}", available);
+
+    msg!("BOBS LAMPORTS: {}", bob.lamports());
+    msg!("PDAS LAMPORTS: {}", pda.lamports());
+
+    // TODO: Withdraw amount asked in instruction
+    **pda.try_borrow_mut_lamports()? -= available;
+    **bob.try_borrow_mut_lamports()? += available;
+
+    // Update account data
+    sf.withdrawn += available as u64;
+    let bytes: &[u8] = unsafe { any_as_u8_slice(&sf) };
+    data[0..bytes.len()].clone_from_slice(bytes);
 
     Ok(())
 }
@@ -197,7 +217,6 @@ fn cancel_stream(_pid: &Pubkey, accounts: &[AccountInfo], _ix: &[u8]) -> Program
     }
 
     let data = pda.try_borrow_mut_data()?;
-    msg!("bytes: {:?}", &data);
     let sf = unpack_account_data(&data);
 
     if alice.key.to_bytes() != sf.sender {

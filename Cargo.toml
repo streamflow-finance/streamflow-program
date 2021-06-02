@@ -1,0 +1,14 @@
+[package]
+name = "streamflow"
+version = "0.0.1"
+description = "StreamFlow"
+authors = ["StreamFlow Devs <devs@streamflow.finance>"]
+repository = "https://github.com/streamflow/streamflow"
+license = "AGPL-3"
+edition = "2018"
+
+[dependencies]
+solana-program = "1.6.10"
+
+[lib]
+crate-type = ["cdylib", "lib"]

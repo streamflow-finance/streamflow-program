@@ -101,6 +101,17 @@ pub fn initialize_stream(pid: &Pubkey, accounts: &[AccountInfo], ix: &[u8]) -> P
     }
 
     let mut sf = unpack_init_instruction(ix, alice.key, bob.key);
+    let struct_size = std::mem::size_of::<StreamFlow>();
+
+    // We transfer also enough to be rent-exempt (about 0.00156 SOL) to the
+    // new account. After all funds are withdrawn and unlocked, this might
+    // be returned to the initializer or put in another pool for future reuse.
+    let rent_min = Rent::default().minimum_balance(struct_size);
+
+    if alice.lamports() < sf.amount + rent_min {
+        msg!("Not enough funds in sender's account to initialize stream");
+        return Err(ProgramError::InsufficientFunds);
+    }
 
     match Clock::get() {
         Ok(v) => {
@@ -114,18 +125,6 @@ pub fn initialize_stream(pid: &Pubkey, accounts: &[AccountInfo], ix: &[u8]) -> P
             }
         }
         Err(e) => return Err(e),
-    }
-
-    let struct_size = std::mem::size_of::<StreamFlow>();
-
-    // We transfer also enough to be rent-exempt (about 0.00156 SOL) to the
-    // new account. After all funds are withdrawn and unlocked, this might
-    // be returned to the initializer or put in another pool for future reuse.
-    let rent_min = Rent::default().minimum_balance(struct_size);
-
-    if alice.lamports() < sf.amount + rent_min {
-        msg!("Not enough funds in sender's account to initialize stream");
-        return Err(ProgramError::InsufficientFunds);
     }
 
     // Create the account holding locked funds and data
@@ -186,6 +185,7 @@ pub fn withdraw_unlocked(_pid: &Pubkey, accounts: &[AccountInfo], ix: &[u8]) -> 
         return Err(ProgramError::InvalidArgument);
     }
 
+    // Current cluster time used to calculate unlocked amount.
     let now: u64;
     match Clock::get() {
         Ok(v) => now = v.unix_timestamp as u64,

@@ -4,12 +4,12 @@ const sol = require("@solana/web3.js");
 const BufferLayout = require("buffer-layout");
 const fs = require("fs");
 
-function readKeypairFromPath (path) {
+function readKeypairFromPath(path) {
     const data = JSON.parse(fs.readFileSync(path, "utf-8"))
     return sol.Keypair.fromSecretKey(Buffer.from(data))
 }
 
-async function encodeProgramData () {
+async function encodeProgramData() {
     // Initialize a struct containing:
     // * instruction (2 = withdraw)
 
@@ -28,7 +28,7 @@ async function encodeProgramData () {
     return data;
 }
 
-async function main (programAddress, accountAddress) {
+async function main(programAddress, accountAddress) {
     const connection = new sol.Connection("http://localhost:8899");
 
     // Alice is our sender who did the initialization.

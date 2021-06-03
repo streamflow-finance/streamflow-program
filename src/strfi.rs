@@ -117,11 +117,12 @@ pub fn initialize_stream(pid: &Pubkey, accounts: &[AccountInfo], ix: &[u8]) -> P
     }
 
     let struct_size = std::mem::size_of::<StreamFlow>();
-    // TODO: make this rent-exempt rather than minimum_balance
-    // and on the end, return what's left to Alice.
+
+    // We transfer also enough to be rent-exempt (about 0.00156 SOL) to the
+    // new account. After all funds are withdrawn and unlocked, this might
+    // be returned to the initializer or put in another pool for future reuse.
     let rent_min = Rent::default().minimum_balance(struct_size);
 
-    // TODO: Review exact amount
     if alice.lamports() < sf.amount + rent_min {
         msg!("Not enough funds in sender's account to initialize stream");
         return Err(ProgramError::InsufficientFunds);
@@ -199,7 +200,6 @@ pub fn withdraw_unlocked(_pid: &Pubkey, accounts: &[AccountInfo], ix: &[u8]) -> 
     let mut available = amount_unlocked - sf.withdrawn;
 
     // In case we're past the set time, we will withdraw what's left.
-    // TODO: Send rent back to Alice.
     if now >= sf.end_time {
         available = sf.amount - sf.withdrawn;
     }

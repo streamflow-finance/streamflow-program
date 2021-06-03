@@ -3,7 +3,7 @@ name = "streamflow"
 version = "0.0.1"
 description = "StreamFlow"
 authors = ["StreamFlow Devs <devs@streamflow.finance>"]
-repository = "https://github.com/streamflow/streamflow"
+repository = "https://github.com/streamflow-finance/streamflow"
 license = "AGPL-3"
 edition = "2018"
 

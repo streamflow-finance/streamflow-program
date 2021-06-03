@@ -224,7 +224,7 @@ fn withdraw_unlocked(pid: &Pubkey, accounts: &[AccountInfo], ix: &[u8]) -> Progr
             requested
         );
         msg!(
-            "Available: {}SOL ({} lamports)",
+            "Available: {} SOL ({} lamports)",
             lamports_to_sol(available),
             available
         );

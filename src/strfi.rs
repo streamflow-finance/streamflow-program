@@ -19,6 +19,7 @@ use std::convert::TryInto;
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
     entrypoint::ProgramResult,
+    fee_calculator::DEFAULT_TARGET_LAMPORTS_PER_SIGNATURE,
     msg,
     program::invoke,
     program_error::ProgramError,
@@ -141,10 +142,9 @@ pub fn initialize_stream(pid: &Pubkey, accounts: &[AccountInfo], ix: &[u8]) -> P
 
     // Send enough for one transaction to Bob, so Bob can do an initial
     // withdraw without having previous funds on their account.
-    // TODO: Calculate correct fees
-    **pda.try_borrow_mut_lamports()? -= 5000;
-    **bob.try_borrow_mut_lamports()? += 5000;
-    sf.withdrawn += 5000;
+    **pda.try_borrow_mut_lamports()? -= DEFAULT_TARGET_LAMPORTS_PER_SIGNATURE;
+    **bob.try_borrow_mut_lamports()? += DEFAULT_TARGET_LAMPORTS_PER_SIGNATURE;
+    sf.withdrawn += DEFAULT_TARGET_LAMPORTS_PER_SIGNATURE;
 
     // Write our metadata to pda's data.
     let mut data = pda.try_borrow_mut_data()?;

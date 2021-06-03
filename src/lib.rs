@@ -17,9 +17,10 @@
 pub mod strfi;
 
 use crate::strfi::{cancel_stream, initialize_stream, withdraw_unlocked};
+
 use solana_program::{
-    account_info::AccountInfo, entrypoint, entrypoint::ProgramResult, program_error::ProgramError,
-    pubkey::Pubkey,
+    account_info::AccountInfo, entrypoint, entrypoint::ProgramResult, msg,
+    program_error::ProgramError, pubkey::Pubkey,
 };
 
 entrypoint!(process_instruction);
@@ -28,6 +29,8 @@ fn process_instruction(
     accounts: &[AccountInfo],
     instruction_data: &[u8],
 ) -> ProgramResult {
+    msg!("StreamFlow Finance v0.0.1");
+
     match instruction_data[0] {
         0 => initialize_stream(program_id, accounts, instruction_data),
         1 => withdraw_unlocked(program_id, accounts, instruction_data),

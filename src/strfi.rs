@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+use std::convert::TryInto;
+
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
     entrypoint::ProgramResult,
@@ -25,18 +27,26 @@ use solana_program::{
     system_instruction,
     sysvar::{clock::Clock, Sysvar},
 };
-use std::convert::TryInto;
 
+// StreamFlow is the struct containing all our necessary metadata.
 #[repr(C)]
 struct StreamFlow {
-    start_time: u64,
-    end_time: u64,
-    amount: u64,
-    withdrawn: u64,
-    sender: [u8; 32],
-    recipient: [u8; 32],
+    // instruction: u8
+    start_time: u64,     // Timestamp when the funds start unlocking
+    end_time: u64,       // Timestamp when all funds should be unlocked
+    amount: u64,         // Amount of funds locked
+    withdrawn: u64,      // Amount of funds withdrawn
+    sender: [u8; 32],    // Pubkey of the program initializer
+    recipient: [u8; 32], // Pubkey of the funds' recipient
 }
 
+// Used to serialize StreamFlow to bytes.
+unsafe fn any_as_u8_slice<T: Sized>(p: &T) -> &[u8] {
+    ::std::slice::from_raw_parts((p as *const T) as *const u8, ::std::mem::size_of::<T>())
+}
+
+// Deserialize instruction_data into StreamFlow struct.
+// This is used to read instructions given to us by the program's initializer.
 fn unpack_init_instruction(ix: &[u8], alice: &Pubkey, bob: &Pubkey) -> StreamFlow {
     let sf = StreamFlow {
         start_time: u64::from(u32::from_le_bytes(ix[1..5].try_into().unwrap())),
@@ -50,6 +60,8 @@ fn unpack_init_instruction(ix: &[u8], alice: &Pubkey, bob: &Pubkey) -> StreamFlo
     return sf;
 }
 
+// Deserialize account data into StreamFlow struct.
+// This is used for reading the metadata from the account holding the locked funds.
 fn unpack_account_data(ix: &[u8]) -> StreamFlow {
     let sf = StreamFlow {
         start_time: u64::from_le_bytes(ix[0..8].try_into().unwrap()),
@@ -61,10 +73,6 @@ fn unpack_account_data(ix: &[u8]) -> StreamFlow {
     };
 
     return sf;
-}
-
-unsafe fn any_as_u8_slice<T: Sized>(p: &T) -> &[u8] {
-    ::std::slice::from_raw_parts((p as *const T) as *const u8, ::std::mem::size_of::<T>())
 }
 
 pub fn initialize_stream(pid: &Pubkey, accounts: &[AccountInfo], ix: &[u8]) -> ProgramResult {
@@ -203,6 +211,7 @@ pub fn withdraw_unlocked(_pid: &Pubkey, accounts: &[AccountInfo], ix: &[u8]) -> 
     msg!("PDAS LAMPORTS: {}", pda.lamports());
 
     // TODO: Withdraw amount asked in instruction
+    // (also allow 0, which should pull max available)
     **pda.try_borrow_mut_lamports()? -= available;
     **bob.try_borrow_mut_lamports()? += available;
 
@@ -220,17 +229,15 @@ pub fn cancel_stream(_pid: &Pubkey, accounts: &[AccountInfo], _ix: &[u8]) -> Pro
     let alice = next_account_info(account_info_iter)?;
     let pda = next_account_info(account_info_iter)?;
 
-    if !alice.is_signer {
-        msg!("ERROR: Alice didn't sign tx");
+    if !alice.is_signer || !alice.is_writable || !pda.is_writable {
         return Err(ProgramError::MissingRequiredSignature);
     }
 
     if pda.data_is_empty() {
-        msg!("pda data is empty");
         return Err(ProgramError::UninitializedAccount);
     }
 
-    let data = pda.try_borrow_mut_data()?;
+    let data = pda.try_borrow_data()?;
     let sf = unpack_account_data(&data);
 
     if alice.key.to_bytes() != sf.sender {

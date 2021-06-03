@@ -21,6 +21,7 @@ use solana_program::{
     entrypoint::ProgramResult,
     fee_calculator::DEFAULT_TARGET_LAMPORTS_PER_SIGNATURE,
     msg,
+    native_token::lamports_to_sol,
     program::invoke,
     program_error::ProgramError,
     pubkey::Pubkey,
@@ -151,9 +152,15 @@ pub fn initialize_stream(pid: &Pubkey, accounts: &[AccountInfo], ix: &[u8]) -> P
     let bytes: &[u8] = unsafe { any_as_u8_slice(&sf) };
     data[0..bytes.len()].clone_from_slice(bytes);
 
-    msg!("Successfully initialized stream for: {}", bob.key);
+    msg!(
+        "Successfully initialized {} SOL ({} lamports) stream for: {}",
+        lamports_to_sol(sf.amount),
+        sf.amount,
+        bob.key
+    );
     msg!("Called by account: {}", alice.key);
     msg!("Funds locked in account: {}", pda.key);
+    msg!("Stream duration: {} seconds", sf.end_time - sf.start_time);
 
     Ok(())
 }
@@ -199,33 +206,49 @@ pub fn withdraw_unlocked(_pid: &Pubkey, accounts: &[AccountInfo], ix: &[u8]) -> 
         * sf.amount as f64) as u64;
     let mut available = amount_unlocked - sf.withdrawn;
 
-    // In case we're past the set time, we will withdraw what's left.
+    // In case we're past the set time, everything is available.
     if now >= sf.end_time {
         available = sf.amount - sf.withdrawn;
     }
 
-    msg!("SOLTIME:   {}", now);
-    msg!("STARTTIME: {}", sf.start_time);
-    msg!("ENDTIME:   {}", sf.end_time);
-    msg!("TOTAL:     {}", sf.amount);
-    msg!("UNLOCKED:  {}", amount_unlocked);
-    msg!("AVAILABLE: {}", available);
+    let mut requested = u64::from_le_bytes(ix[1..9].try_into().unwrap());
+    if requested == 0 {
+        requested = available;
+    }
 
-    msg!("BOBS LAMPORTS: {}", bob.lamports());
-    msg!("PDAS LAMPORTS: {}", pda.lamports());
+    if requested > available {
+        msg!("Amount requested for withdraw is larger than what is available.");
+        msg!(
+            "Requested: {} SOL ({} lamports)",
+            lamports_to_sol(requested),
+            requested
+        );
+        msg!(
+            "Available: {}SOL ({} lamports)",
+            lamports_to_sol(available),
+            available
+        );
+        return Err(ProgramError::InvalidArgument);
+    }
 
-    // TODO: Withdraw amount asked in instruction
-    // (also allow 0, which should pull max available)
-    **pda.try_borrow_mut_lamports()? -= available;
-    **bob.try_borrow_mut_lamports()? += available;
+    **pda.try_borrow_mut_lamports()? -= requested;
+    **bob.try_borrow_mut_lamports()? += requested;
 
     // Update account data
     sf.withdrawn += available as u64;
     let bytes: &[u8] = unsafe { any_as_u8_slice(&sf) };
     data[0..bytes.len()].clone_from_slice(bytes);
 
-    msg!("Successfully withdrawn: {} lamports", available);
-    msg!("Remaining: {} lamports", sf.amount - sf.withdrawn);
+    msg!(
+        "Successfully withdrawn: {} SOL ({} lamports)",
+        lamports_to_sol(available),
+        available
+    );
+    msg!(
+        "Remaining: {} SOL ({} lamports)",
+        lamports_to_sol(sf.amount - sf.withdrawn),
+        sf.amount - sf.withdrawn
+    );
 
     // TODO: Return remaining rent somewhere.
 

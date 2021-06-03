@@ -166,7 +166,7 @@ fn initialize_stream(pid: &Pubkey, accounts: &[AccountInfo], ix: &[u8]) -> Progr
     Ok(())
 }
 
-fn withdraw_unlocked(_pid: &Pubkey, accounts: &[AccountInfo], ix: &[u8]) -> ProgramResult {
+fn withdraw_unlocked(pid: &Pubkey, accounts: &[AccountInfo], ix: &[u8]) -> ProgramResult {
     msg!("Requested withdraw of unlocked funds");
     let account_info_iter = &mut accounts.iter();
     let bob = next_account_info(account_info_iter)?;
@@ -176,12 +176,11 @@ fn withdraw_unlocked(_pid: &Pubkey, accounts: &[AccountInfo], ix: &[u8]) -> Prog
         return Err(ProgramError::InvalidInstructionData);
     }
 
-    if !bob.is_signer {
-        msg!("ERROR: Bob didn't sign tx");
+    if !bob.is_signer || !bob.is_writable || !pda.is_writable {
         return Err(ProgramError::MissingRequiredSignature);
     }
 
-    if pda.data_is_empty() {
+    if pda.data_is_empty() || pda.owner != pid {
         return Err(ProgramError::UninitializedAccount);
     }
 
@@ -189,8 +188,8 @@ fn withdraw_unlocked(_pid: &Pubkey, accounts: &[AccountInfo], ix: &[u8]) -> Prog
     let mut sf = unpack_account_data(&data);
 
     if bob.key.to_bytes() != sf.recipient {
-        msg!("ERROR: bob.key != sf.recipient");
-        return Err(ProgramError::InvalidArgument);
+        msg!("Unauthorized to withdraw for {}", bob.key);
+        return Err(ProgramError::MissingRequiredSignature);
     }
 
     // Current cluster time used to calculate unlocked amount.
@@ -256,7 +255,7 @@ fn withdraw_unlocked(_pid: &Pubkey, accounts: &[AccountInfo], ix: &[u8]) -> Prog
     Ok(())
 }
 
-fn cancel_stream(_pid: &Pubkey, accounts: &[AccountInfo], _ix: &[u8]) -> ProgramResult {
+fn cancel_stream(pid: &Pubkey, accounts: &[AccountInfo], _ix: &[u8]) -> ProgramResult {
     msg!("Requested stream cancellation");
     let account_info_iter = &mut accounts.iter();
     let alice = next_account_info(account_info_iter)?;
@@ -266,7 +265,7 @@ fn cancel_stream(_pid: &Pubkey, accounts: &[AccountInfo], _ix: &[u8]) -> Program
         return Err(ProgramError::MissingRequiredSignature);
     }
 
-    if pda.data_is_empty() {
+    if pda.data_is_empty() || pda.owner != pid {
         return Err(ProgramError::UninitializedAccount);
     }
 
@@ -274,8 +273,8 @@ fn cancel_stream(_pid: &Pubkey, accounts: &[AccountInfo], _ix: &[u8]) -> Program
     let sf = unpack_account_data(&data);
 
     if alice.key.to_bytes() != sf.sender {
-        msg!("ERROR: alice.key != sf.sender");
-        return Err(ProgramError::InvalidArgument);
+        msg!("Unauthorized to withdraw for {}", alice.key);
+        return Err(ProgramError::MissingRequiredSignature);
     }
 
     // Alice decides to cancel, and withdraws from the derived account,

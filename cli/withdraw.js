@@ -26,7 +26,7 @@ async function encodeProgramData () {
     layout.encode({
             instruction: 1, // 1: withdraw
             // amount: Number.MAX_SAFE_INTEGER // limited to 2^53 = 9007199254740992
-            amount: 1000000,
+            amount: 160000,
         },
         data
     );

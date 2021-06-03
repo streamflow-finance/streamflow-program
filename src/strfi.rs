@@ -116,12 +116,12 @@ pub fn initialize_stream(pid: &Pubkey, accounts: &[AccountInfo], ix: &[u8]) -> P
 
     match Clock::get() {
         Ok(v) => {
-            msg!("SOLANATIME: {}", v.unix_timestamp);
-            msg!("STARTTIME:  {}", sf.start_time);
-            msg!("ENDTIME:    {}", sf.end_time);
-            msg!("DURATION:   {}", sf.end_time - sf.start_time);
             if sf.start_time < v.unix_timestamp as u64 || sf.start_time >= sf.end_time {
-                msg!("ERROR: Timestamps are incorrect");
+                msg!("Timestamps are invalid!");
+                msg!("Solana cluster time: {}", v.unix_timestamp);
+                msg!("Stream start time:   {}", sf.start_time);
+                msg!("Stream end time:     {}", sf.end_time);
+                msg!("Stream duration:     {}", sf.end_time - sf.start_time);
                 return Err(ProgramError::InvalidArgument);
             }
         }

@@ -76,8 +76,8 @@ fn unpack_account_data(ix: &[u8]) -> StreamFlow {
 }
 
 pub fn initialize_stream(pid: &Pubkey, accounts: &[AccountInfo], ix: &[u8]) -> ProgramResult {
+    msg!("Requested stream initialization");
     let account_info_iter = &mut accounts.iter();
-
     let alice = next_account_info(account_info_iter)?;
     let bob = next_account_info(account_info_iter)?;
     let pda = next_account_info(account_info_iter)?;
@@ -151,12 +151,16 @@ pub fn initialize_stream(pid: &Pubkey, accounts: &[AccountInfo], ix: &[u8]) -> P
     let bytes: &[u8] = unsafe { any_as_u8_slice(&sf) };
     data[0..bytes.len()].clone_from_slice(bytes);
 
+    msg!("Successfully initialized stream for {}", bob.key);
+    msg!("Called by account {}", alice.key);
+    msg!("Funds locked in {}", pda.key);
+
     Ok(())
 }
 
 pub fn withdraw_unlocked(_pid: &Pubkey, accounts: &[AccountInfo], ix: &[u8]) -> ProgramResult {
+    msg!("Requested unlocked funds withdraw");
     let account_info_iter = &mut accounts.iter();
-
     let bob = next_account_info(account_info_iter)?;
     let pda = next_account_info(account_info_iter)?;
 
@@ -220,12 +224,15 @@ pub fn withdraw_unlocked(_pid: &Pubkey, accounts: &[AccountInfo], ix: &[u8]) -> 
     let bytes: &[u8] = unsafe { any_as_u8_slice(&sf) };
     data[0..bytes.len()].clone_from_slice(bytes);
 
+    msg!("Successfully withdrawn: {} lamports", available);
+    msg!("Remaining: {} lamports", sf.amount - sf.withdrawn);
+
     Ok(())
 }
 
 pub fn cancel_stream(_pid: &Pubkey, accounts: &[AccountInfo], _ix: &[u8]) -> ProgramResult {
+    msg!("Requested stream cancellation");
     let account_info_iter = &mut accounts.iter();
-
     let alice = next_account_info(account_info_iter)?;
     let pda = next_account_info(account_info_iter)?;
 
@@ -250,6 +257,13 @@ pub fn cancel_stream(_pid: &Pubkey, accounts: &[AccountInfo], _ix: &[u8]) -> Pro
     let avail = pda.lamports();
     **pda.try_borrow_mut_lamports()? -= avail;
     **alice.try_borrow_mut_lamports()? += avail;
+
+    msg!("Successfully cancelled stream on {} account", pda.key);
+    msg!(
+        "Remaining funds ({} lamports) returned to {}",
+        avail,
+        alice.key
+    );
 
     Ok(())
 }

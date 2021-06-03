@@ -227,6 +227,8 @@ pub fn withdraw_unlocked(_pid: &Pubkey, accounts: &[AccountInfo], ix: &[u8]) -> 
     msg!("Successfully withdrawn: {} lamports", available);
     msg!("Remaining: {} lamports", sf.amount - sf.withdrawn);
 
+    // TODO: Return remaining rent somewhere.
+
     Ok(())
 }
 

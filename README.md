@@ -12,7 +12,7 @@ Usage
 
 See [cli/strfi.js](cli/strfi.js) to get an understanding.
 
-## `initialize_stream`
+### `initialize_stream`
 
 This instruction is used to initialize the stream, and save the data
 and lock the funds for streaming on a given account.
@@ -42,7 +42,7 @@ in order to issue a withdraw instruction in the future.
     * `recipient` (32 bytes, u8 array) (Bob/Recipient's public key)
 
 
-## `withdraw_unlocked`
+### `withdraw_unlocked`
 
 This instruction is used by the stream recipient, and will transfer
 a given amount of lamports, if unlocked, from the stream account to
@@ -60,7 +60,7 @@ funds will be withdrawn.
     * `amount` (64 bytes, u64) (Amount of lamports to potentially withdraw)
 
 
-## `cancel_stream`
+### `cancel_stream`
 
 This instruction is used by the stream initializer, and will cancel
 the given stream, returning all locked funds to the caller and

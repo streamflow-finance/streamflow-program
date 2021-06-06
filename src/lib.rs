@@ -1,6 +1,7 @@
 // Copyright (c) 2021 Ivan Jelincic <parazyd@dyne.org>
 //
-// This file is part of strfi
+// This file is part of streamflow-program
+// https://github.com/StreamFlow-Finance/streamflow-program
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License version 3

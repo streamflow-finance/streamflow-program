@@ -67,7 +67,7 @@ async function withdrawStream(connection, programAddress, accountAddress) {
     var data = Buffer.alloc(withdrawLayout.span);
     withdrawLayout.encode({
             instruction: 1,
-            amount: 160000,
+            amount: 0,
         },
         data,
     );
@@ -81,6 +81,11 @@ async function withdrawStream(connection, programAddress, accountAddress) {
             isWritable: true,
         }, {
             pubkey: new sol.PublicKey(accountAddress),
+            isSigner: false,
+            isWritable: true,
+        }, {
+            // Address that collects rent after a successful and finished stream
+            pubkey: new sol.PublicKey("Ht5G1RhkcKnpLVLMhqJc5aqZ4wYUEbxbtZwGCVbgU7DL"),
             isSigner: false,
             isWritable: true,
         }, {

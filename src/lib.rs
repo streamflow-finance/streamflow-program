@@ -264,12 +264,14 @@ fn withdraw_unlocked(pid: &Pubkey, accounts: &[AccountInfo], ix: &[u8]) -> Progr
         sf.amount - sf.withdrawn
     );
 
+    /*
     if sf.withdrawn == sf.amount {
         // Collect rent after stream is finished.
         let rent = pda.lamports();
         **pda.try_borrow_mut_lamports()? -= rent;
         **lld.try_borrow_mut_lamports()? += rent;
     }
+    */
 
     Ok(())
 }

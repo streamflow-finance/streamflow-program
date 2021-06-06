@@ -15,6 +15,7 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 use std::convert::TryInto;
+use std::str::FromStr;
 
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
@@ -171,12 +172,24 @@ fn withdraw_unlocked(pid: &Pubkey, accounts: &[AccountInfo], ix: &[u8]) -> Progr
     let account_info_iter = &mut accounts.iter();
     let bob = next_account_info(account_info_iter)?;
     let pda = next_account_info(account_info_iter)?;
+    let lld = next_account_info(account_info_iter)?;
 
     if ix.len() != 9 {
         return Err(ProgramError::InvalidInstructionData);
     }
 
-    if !bob.is_signer || !bob.is_writable || !pda.is_writable {
+    // Hardcoded rent collector
+    match Pubkey::from_str("Ht5G1RhkcKnpLVLMhqJc5aqZ4wYUEbxbtZwGCVbgU7DL") {
+        Ok(v) => {
+            if lld.key != &v {
+                msg!("Got unexpected rent collection account");
+                return Err(ProgramError::InvalidAccountData);
+            }
+        }
+        _ => return Err(ProgramError::Custom(4242)),
+    }
+
+    if !bob.is_signer || !bob.is_writable || !pda.is_writable || !lld.is_writable {
         return Err(ProgramError::MissingRequiredSignature);
     }
 
@@ -250,7 +263,12 @@ fn withdraw_unlocked(pid: &Pubkey, accounts: &[AccountInfo], ix: &[u8]) -> Progr
         sf.amount - sf.withdrawn
     );
 
-    // TODO: Return remaining rent somewhere.
+    if sf.withdrawn == sf.amount {
+        // Collect rent after stream is finished.
+        let rent = pda.lamports();
+        **pda.try_borrow_mut_lamports()? -= rent;
+        **lld.try_borrow_mut_lamports()? += rent;
+    }
 
     Ok(())
 }

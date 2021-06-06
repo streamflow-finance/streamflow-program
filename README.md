@@ -53,6 +53,8 @@ funds will be withdrawn.
 
 * Accounts:
     * Bob (Recipient) (signer, writable)
+    * Rent collector (Hardcoded address where the remaining rent is sent
+      after a successful stream) (writable)
     * PDA (Account where the funds are locked) (writable)
 
 * Instruction data:

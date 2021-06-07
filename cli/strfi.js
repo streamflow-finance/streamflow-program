@@ -167,7 +167,8 @@ async function initStream(connection, programAddress) {
 }
 
 async function main(ix, programAddress, accountAddress) {
-    const conn = new sol.Connection("http://localhost:8899");
+    //const conn = new sol.Connection("http://localhost:8899");
+    const conn = new sol.Connection("https://api.devnet.solana.com");
     console.log("ALICE: %s", alice.publicKey.toBase58());
     console.log("BOB:   %s", bob.publicKey.toBase58());
 

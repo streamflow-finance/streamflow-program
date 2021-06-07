@@ -181,7 +181,7 @@ fn withdraw_unlocked(pid: &Pubkey, accounts: &[AccountInfo], ix: &[u8]) -> Progr
 
     // Hardcoded rent collector
     // TODO: Update at deployment
-    match Pubkey::from_str("Ht5G1RhkcKnpLVLMhqJc5aqZ4wYUEbxbtZwGCVbgU7DL") {
+    match Pubkey::from_str("DrFtxPb9F6SxpHHHFiEtSNXE3SZCUNLXMaHS6r8pkoz2") {
         Ok(v) => {
             if lld.key != &v {
                 msg!("Got unexpected rent collection account");

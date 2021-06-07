@@ -103,7 +103,7 @@ async function withdrawStream(connection, programAddress, accountAddress) {
             isWritable: true,
         }, {
             // Address that collects rent after a successful and finished stream
-            pubkey: new sol.PublicKey("Ht5G1RhkcKnpLVLMhqJc5aqZ4wYUEbxbtZwGCVbgU7DL"),
+            pubkey: new sol.PublicKey("DrFtxPb9F6SxpHHHFiEtSNXE3SZCUNLXMaHS6r8pkoz2"),
             isSigner: false,
             isWritable: true,
         }, {

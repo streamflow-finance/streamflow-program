@@ -21,6 +21,10 @@
 const sol = require("@solana/web3.js");
 const BufferLayout = require("buffer-layout");
 
+//const cluster = "http://localhost:8899";
+const cluster = "https://api.devnet.solana.com";
+const programAddr = "2DvvSEde36Ch3B52g9hKWDYbfmJimLpJwVBV9Cknypi4";
+
 // Alice is our sender, make sure there is funds in the account
 const alice = sol.Keypair.fromSecretKey(Buffer.from([97, 93, 122, 16, 225, 220, 239, 230, 206, 134, 241, 223, 228, 135, 202, 29, 7, 124, 108, 250, 96, 12, 103, 91, 103, 95, 201, 25, 156, 18, 98, 149, 89, 55, 40, 62, 196, 151, 180, 107, 249, 9, 23, 53, 215, 63, 170, 57, 173, 9, 36, 82, 233, 112, 55, 16, 15, 247, 47, 250, 115, 98, 210, 129]));
 // await connection.requestAirdrop(alice.publicKey, 1000000000);
@@ -166,18 +170,17 @@ async function initStream(connection, programAddress) {
 
 }
 
-async function main(ix, programAddress, accountAddress) {
-    //const conn = new sol.Connection("http://localhost:8899");
-    const conn = new sol.Connection("https://api.devnet.solana.com");
+async function main(ix, accountAddress) {
+    const conn = new sol.Connection(cluster);
     console.log("ALICE: %s", alice.publicKey.toBase58());
     console.log("BOB:   %s", bob.publicKey.toBase58());
 
     if (ix == "init") {
-        confirmation = await initStream(conn, programAddress);
+        confirmation = await initStream(conn, programAddr);
     } else if (ix == "withdraw" && accountAddress != "") {
-        confirmation = await withdrawStream(conn, programAddress, accountAddress);
+        confirmation = await withdrawStream(conn, programAddr, accountAddress);
     } else if (ix == "cancel" && accountAddress != "") {
-        confirmation = await cancelStream(conn, programAddress, accountAddress);
+        confirmation = await cancelStream(conn, programAddr, accountAddress);
     } else {
         usage();
     }
@@ -186,22 +189,22 @@ async function main(ix, programAddress, accountAddress) {
 }
 
 function usage() {
-    console.log("usage: strfi.js [init|withdraw|cancel] [programAddress] [accountAddress]");
+    console.log("usage: strfi.js [init|withdraw|cancel] [accountAddress]");
     console.log("ex:");
-    console.log("strfi.js init     CQg4Kcd285oMPzEHubEHny3ncqt9omWmNXmCTttnfVbp");
-    console.log("strfi.js withdraw CQg4Kcd285oMPzEHubEHny3ncqt9omWmNXmCTttnfVbp BDeKFWwL7zsFHKphFEHjEmcpk9twKgUgepytyA44Ta6e");
-    console.log("strfi.js cancel   CQg4Kcd285oMPzEHubEHny3ncqt9omWmNXmCTttnfVbp BDeKFWwL7zsFHKphFEHjEmcpk9twKgUgepytyA44Ta6e");
+    console.log("strfi.js init");
+    console.log("strfi.js withdraw BDeKFWwL7zsFHKphFEHjEmcpk9twKgUgepytyA44Ta6e");
+    console.log("strfi.js cancel   BDeKFWwL7zsFHKphFEHjEmcpk9twKgUgepytyA44Ta6e");
     process.exit(1);
 }
 
-if (process.argv.length < 4 && process.argv.length > 5) {
+if (process.argv.length < 3 && process.argv.length > 4) {
     usage();
 }
 
 var accAddr = "";
-if (process.argv.length == 5) {
-    accAddr = process.argv[4];
+if (process.argv.length == 4) {
+    accAddr = process.argv[3];
 }
 
-main(process.argv[2], process.argv[3], accAddr).then(
+main(process.argv[2], accAddr).then(
     () => process.exit(0)).catch(err => console.error(err));

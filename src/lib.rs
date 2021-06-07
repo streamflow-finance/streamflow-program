@@ -311,38 +311,6 @@ fn cancel_stream(pid: &Pubkey, accounts: &[AccountInfo], _ix: &[u8]) -> ProgramR
     Ok(())
 }
 
-/*
-// Function for collecting rent from finished streams
-fn reap_rent(_pid: &Pubkey, accounts: &[AccountInfo], _ix: &[u8]) -> ProgramResult {
-    msg!("Reaping account rents");
-    let account_info_iter = &mut accounts.iter();
-    let reaper = next_account_info(account_info_iter)?;
-    let _sys = next_account_info(account_info_iter)?;
-
-    loop {
-        match next_account_info(account_info_iter) {
-            Ok(v) => match v.try_borrow_data() {
-                Ok(data) => {
-                    let sf = unpack_account_data(&data);
-                    if sf.amount == sf.withdrawn {
-                        let rent = v.lamports();
-                        **v.try_borrow_mut_lamports()? -= rent;
-                        **reaper.try_borrow_mut_lamports()? += rent;
-                    }
-                }
-                Err(_e) => {
-                    msg!("Warning: Account {} has no data", v.key);
-                    continue;
-                }
-            },
-            Err(_e) => break,
-        }
-    }
-
-    Ok(())
-}
-*/
-
 entrypoint!(process_instruction);
 fn process_instruction(
     program_id: &Pubkey,
@@ -360,7 +328,6 @@ fn process_instruction(
         0 => initialize_stream(program_id, accounts, instruction_data),
         1 => withdraw_unlocked(program_id, accounts, instruction_data),
         2 => cancel_stream(program_id, accounts, instruction_data),
-        // 99 => reap_rent(program_id, accounts, instruction_data),
         _ => Err(ProgramError::InvalidArgument),
     }
 }

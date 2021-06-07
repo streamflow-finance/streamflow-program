@@ -349,7 +349,12 @@ fn process_instruction(
     accounts: &[AccountInfo],
     instruction_data: &[u8],
 ) -> ProgramResult {
-    msg!("StreamFlowFinance v0.0.1");
+    msg!(
+        "StreamFlowFinance v{}.{}.{}",
+        env!("CARGO_PKG_VERSION_MAJOR"),
+        env!("CARGO_PKG_VERSION_MINOR"),
+        env!("CARGO_PKG_VERSION_PATCH")
+    );
 
     match instruction_data[0] {
         0 => initialize_stream(program_id, accounts, instruction_data),

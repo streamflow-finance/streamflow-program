@@ -53,9 +53,9 @@ funds will be withdrawn.
 
 * Accounts:
     * Bob (Recipient) (signer, writable)
+    * PDA (Account where the funds are locked) (writable)
     * Rent collector (Hardcoded address where the remaining rent is sent
       after a successful stream) (writable)
-    * PDA (Account where the funds are locked) (writable)
 
 * Instruction data:
     * `instruction` (1 byte, u8) (Should be `1` for `withdraw_unlocked`)

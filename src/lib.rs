@@ -53,38 +53,34 @@ unsafe fn any_as_u8_slice<T: Sized>(p: &T) -> &[u8] {
 // Deserialize instruction_data into StreamFlow struct.
 // This is used to read instructions given to us by the program's initializer.
 fn unpack_init_instruction(ix: &[u8], alice: &Pubkey, bob: &Pubkey) -> StreamFlow {
-    let sf = StreamFlow {
+    StreamFlow {
         start_time: u64::from(u32::from_le_bytes(ix[1..5].try_into().unwrap())),
         end_time: u64::from(u32::from_le_bytes(ix[5..9].try_into().unwrap())),
         amount: u64::from_le_bytes(ix[9..17].try_into().unwrap()),
         withdrawn: 0,
         sender: alice.to_bytes(),
         recipient: bob.to_bytes(),
-    };
-
-    return sf;
+    }
 }
 
 // Deserialize account data into StreamFlow struct.
 // This is used for reading the metadata from the account holding the locked funds.
 fn unpack_account_data(ix: &[u8]) -> StreamFlow {
-    let sf = StreamFlow {
+    StreamFlow {
         start_time: u64::from_le_bytes(ix[0..8].try_into().unwrap()),
         end_time: u64::from_le_bytes(ix[8..16].try_into().unwrap()),
         amount: u64::from_le_bytes(ix[16..24].try_into().unwrap()),
         withdrawn: u64::from_le_bytes(ix[24..32].try_into().unwrap()),
         sender: ix[32..64].try_into().unwrap(),
         recipient: ix[64..96].try_into().unwrap(),
-    };
-
-    return sf;
+    }
 }
 
 fn calculate_streamed(now: u64, start: u64, end: u64, amount: u64) -> u64 {
     // This is valid float division, but we lose precision when going u64.
     // The loss however should not matter, as in the end we will simply
     // send everything that is remaining.
-    return (((now - start) as f64) / ((end - start) as f64) * amount as f64) as u64;
+    (((now - start) as f64) / ((end - start) as f64) * amount as f64) as u64
 }
 
 fn initialize_stream(pid: &Pubkey, accounts: &[AccountInfo], ix: &[u8]) -> ProgramResult {

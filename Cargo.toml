@@ -1,9 +1,10 @@
 [package]
 name = "streamflow"
 version = "0.1.0"
-description = "StreamFlow"
+description = "Solana program for streamflow.finance"
 authors = ["StreamFlow Developers <hello@streamflow.finance>"]
 repository = "https://github.com/streamflow-finance/streamflow-program"
+readme = "README.md"
 license = "AGPL-3"
 edition = "2018"
 

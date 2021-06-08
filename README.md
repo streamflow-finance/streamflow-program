@@ -72,6 +72,7 @@ purging the account.
 
 * Accounts:
     * Alice (sender) (signer, writable)
+    * Bob (recipient) (writable)
     * PDA (account where funds are locked) (writable)
 
 * Instruction data:

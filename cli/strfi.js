@@ -69,6 +69,10 @@ async function cancelStream(connection, programAddress, accountAddress) {
             isSigner: true,
             isWritable: true,
         }, {
+            pubkey: bob.publicKey,
+            isSigner: false,
+            isWritable: true,
+        }, {
             pubkey: new sol.PublicKey(accountAddress),
             isSigner: false,
             isWritable: true,

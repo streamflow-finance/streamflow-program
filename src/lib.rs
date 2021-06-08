@@ -80,6 +80,13 @@ fn unpack_account_data(ix: &[u8]) -> StreamFlow {
     return sf;
 }
 
+fn calculate_streamed(now: u64, start: u64, end: u64, amount: u64) -> u64 {
+    // This is valid float division, but we lose precision when going u64.
+    // The loss however should not matter, as in the end we will simply
+    // send everything that is remaining.
+    return (((now - start) as f64) / ((end - start) as f64) * amount as f64) as u64;
+}
+
 fn initialize_stream(pid: &Pubkey, accounts: &[AccountInfo], ix: &[u8]) -> ProgramResult {
     msg!("Requested stream initialization");
     let account_info_iter = &mut accounts.iter();
@@ -202,7 +209,7 @@ fn withdraw_unlocked(pid: &Pubkey, accounts: &[AccountInfo], ix: &[u8]) -> Progr
     let mut sf = unpack_account_data(&data);
 
     if bob.key.to_bytes() != sf.recipient {
-        msg!("Unauthorized to withdraw for {}", bob.key);
+        msg!("This stream isn't indented for {}", bob.key);
         return Err(ProgramError::MissingRequiredSignature);
     }
 
@@ -213,11 +220,7 @@ fn withdraw_unlocked(pid: &Pubkey, accounts: &[AccountInfo], ix: &[u8]) -> Progr
         Err(e) => return Err(e),
     }
 
-    // This is valid float division, but we lose precision when going u64.
-    // The loss however should not matter, as in the end we will simply
-    // send everything that is remaining.
-    let amount_unlocked = (((now - sf.start_time) as f64) / ((sf.end_time - sf.start_time) as f64)
-        * sf.amount as f64) as u64;
+    let amount_unlocked = calculate_streamed(now, sf.start_time, sf.end_time, sf.amount);
     let mut available = amount_unlocked - sf.withdrawn;
 
     // In case we're past the set time, everything is available.
@@ -280,9 +283,10 @@ fn cancel_stream(pid: &Pubkey, accounts: &[AccountInfo], _ix: &[u8]) -> ProgramR
     msg!("Requested stream cancellation");
     let account_info_iter = &mut accounts.iter();
     let alice = next_account_info(account_info_iter)?;
+    let bob = next_account_info(account_info_iter)?;
     let pda = next_account_info(account_info_iter)?;
 
-    if !alice.is_signer || !alice.is_writable || !pda.is_writable {
+    if !alice.is_signer || !alice.is_writable || !bob.is_writable || !pda.is_writable {
         return Err(ProgramError::MissingRequiredSignature);
     }
 
@@ -298,14 +302,43 @@ fn cancel_stream(pid: &Pubkey, accounts: &[AccountInfo], _ix: &[u8]) -> ProgramR
         return Err(ProgramError::MissingRequiredSignature);
     }
 
+    if bob.key.to_bytes() != sf.recipient {
+        msg!("This stream isn't intended for {}", bob.key);
+        return Err(ProgramError::MissingRequiredSignature);
+    }
+
+    // Current cluster time used to calculate unlocked amount.
+    let now: u64;
+    match Clock::get() {
+        Ok(v) => now = v.unix_timestamp as u64,
+        Err(e) => return Err(e),
+    }
+
+    // Transfer what was unlocked but not withdrawn to Bob.
+    let amount_unlocked = calculate_streamed(now, sf.start_time, sf.end_time, sf.amount);
+    let available = amount_unlocked - sf.withdrawn;
+    **pda.try_borrow_mut_lamports()? -= available;
+    **bob.try_borrow_mut_lamports()? += available;
+
     // Alice decides to cancel, and withdraws from the derived account,
     // resulting in its purge.
-    let avail = pda.lamports();
-    **pda.try_borrow_mut_lamports()? -= avail;
-    **alice.try_borrow_mut_lamports()? += avail;
+    let remains = pda.lamports();
+    **pda.try_borrow_mut_lamports()? -= remains;
+    **alice.try_borrow_mut_lamports()? += remains;
 
-    msg!("Successfully cancelled stream on {} account", pda.key);
-    msg!("Remaining lamports ({}) returned to {}", avail, alice.key);
+    msg!("Successfully cancelled stream on {} ", pda.key);
+    msg!(
+        "Transferred unlocked {} SOL ({} lamports to {}",
+        lamports_to_sol(available),
+        available,
+        bob.key
+    );
+    msg!(
+        "Returned {} SOL ({} lamports) to {}",
+        lamports_to_sol(remains),
+        remains,
+        alice.key
+    );
 
     Ok(())
 }

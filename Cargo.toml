@@ -1,6 +1,6 @@
 [package]
 name = "streamflow"
-version = "0.0.1"
+version = "0.1.0"
 description = "StreamFlow"
 authors = ["StreamFlow Developers <hello@streamflow.finance>"]
 repository = "https://github.com/streamflow-finance/streamflow-program"

@@ -33,26 +33,34 @@ use solana_program::{
     sysvar::{clock::Clock, Sysvar},
 };
 
-// StreamFlow is the struct containing all our necessary metadata.
+/// StreamFlow is the struct containing all our necessary metadata.
 #[repr(C)]
-struct StreamFlow {
-    // instruction: u8
-    start_time: u64,     // Timestamp when the funds start unlocking
-    end_time: u64,       // Timestamp when all funds should be unlocked
-    amount: u64,         // Amount of funds locked
-    withdrawn: u64,      // Amount of funds withdrawn
-    sender: [u8; 32],    // Pubkey of the program initializer
-    recipient: [u8; 32], // Pubkey of the funds' recipient
+pub struct StreamFlow {
+    /// Timestamp when the funds start unlocking
+    pub start_time: u64,
+    /// Timestamp when all funds should be unlocked
+    pub end_time: u64,
+    /// Amount of funds locked
+    pub amount: u64,
+    /// Amount of funds withdrawn
+    pub withdrawn: u64,
+    /// Pubkey of the program initializer
+    pub sender: [u8; 32],
+    /// Pubkey of the funds' recipient
+    pub recipient: [u8; 32],
 }
 
-// Used to serialize StreamFlow to bytes.
-unsafe fn any_as_u8_slice<T: Sized>(p: &T) -> &[u8] {
+/// Serialize any to u8 slice.
+/// # Safety
+///
+/// :)
+pub unsafe fn any_as_u8_slice<T: Sized>(p: &T) -> &[u8] {
     ::std::slice::from_raw_parts((p as *const T) as *const u8, ::std::mem::size_of::<T>())
 }
 
-// Deserialize instruction_data into StreamFlow struct.
-// This is used to read instructions given to us by the program's initializer.
-fn unpack_init_instruction(ix: &[u8], alice: &Pubkey, bob: &Pubkey) -> StreamFlow {
+/// Deserialize instruction_data into StreamFlow struct.
+/// This is used to read instructions given to us by the program's initializer.
+pub fn unpack_init_instruction(ix: &[u8], alice: &Pubkey, bob: &Pubkey) -> StreamFlow {
     StreamFlow {
         start_time: u64::from(u32::from_le_bytes(ix[1..5].try_into().unwrap())),
         end_time: u64::from(u32::from_le_bytes(ix[5..9].try_into().unwrap())),
@@ -63,9 +71,9 @@ fn unpack_init_instruction(ix: &[u8], alice: &Pubkey, bob: &Pubkey) -> StreamFlo
     }
 }
 
-// Deserialize account data into StreamFlow struct.
-// This is used for reading the metadata from the account holding the locked funds.
-fn unpack_account_data(ix: &[u8]) -> StreamFlow {
+/// Deserialize account data into StreamFlow struct.
+/// This is used for reading the metadata from the account holding the locked funds.
+pub fn unpack_account_data(ix: &[u8]) -> StreamFlow {
     StreamFlow {
         start_time: u64::from_le_bytes(ix[0..8].try_into().unwrap()),
         end_time: u64::from_le_bytes(ix[8..16].try_into().unwrap()),
@@ -340,7 +348,8 @@ fn cancel_stream(pid: &Pubkey, accounts: &[AccountInfo], _ix: &[u8]) -> ProgramR
 }
 
 entrypoint!(process_instruction);
-fn process_instruction(
+/// The program entrypoint
+pub fn process_instruction(
     program_id: &Pubkey,
     accounts: &[AccountInfo],
     instruction_data: &[u8],

@@ -22,6 +22,7 @@
 // with Javascript.
 const BufferLayout = require("buffer-layout");
 const sol = require("@solana/web3.js");
+const fs = require('fs');
 
 // Cluster and program address to use
 // const cluster = "http://localhost:8899";
@@ -30,20 +31,32 @@ const programAddr = "2DvvSEde36Ch3B52g9hKWDYbfmJimLpJwVBV9Cknypi4"
 
 // Alice is our sender, make sure there is funds in the account.
 // 71G4rRM4DugVRmAwEUtBNaw8xwGKZmSujwjFy37ErphW
-const alice = sol.Keypair.fromSecretKey(Buffer.from([97, 93, 122, 16, 225,
+let alice;
+if (process.env.ALICE !== undefined) {
+    alice = sol.Keypair.fromSecretKey(
+        Buffer.from(JSON.parse(fs.readFileSync(process.env.ALICE, "utf-8"))));
+} else {
+    alice = sol.Keypair.fromSecretKey(Buffer.from([97, 93, 122, 16, 225,
     220, 239, 230, 206, 134, 241, 223, 228, 135, 202, 29, 7, 124, 108, 250,
     96, 12, 103, 91, 103, 95, 201, 25, 156, 18, 98, 149, 89, 55, 40, 62, 196,
     151, 180, 107, 249, 9, 23, 53, 215, 63, 170, 57, 173, 9, 36, 82, 233, 112,
     55, 16, 15, 247, 47, 250, 115, 98, 210, 129]));
+}
 // await connection.requestAirdrop(alice.publicKey, 1000000000);
 
 // Bob is our recipient
 // H4wPUkepkJgB2FMaRyZWvsSpNUK8exoMonbRgRsipisb
-const bob = sol.Keypair.fromSecretKey(Buffer.from([104, 59, 250, 44, 167, 108,
-    233, 202, 30, 232, 3, 91, 108, 141, 125, 241, 216, 86, 189, 157, 48, 69,
-    78, 98, 125, 6, 150, 127, 41, 214, 124, 242, 238, 189, 58, 189, 215, 194,
-    98, 74, 98, 184, 196, 38, 158, 174, 51, 135, 76, 147, 74, 61, 214, 178,
-    94, 233, 190, 216, 78, 115, 83, 39, 99, 226]));
+let bob;
+if (process.env.BOB !== undefined) {
+    bob = sol.Keypair.fromSecretKey(
+        Buffer.from(JSON.parse(fs.readFileSync(process.env.BOB, "utf-8"))));
+} else {
+    bob = sol.Keypair.fromSecretKey(Buffer.from([104, 59, 250, 44, 167,
+    108, 233, 202, 30, 232, 3, 91, 108, 141, 125, 241, 216, 86, 189, 157, 48,
+    69, 78, 98, 125, 6, 150, 127, 41, 214, 124, 242, 238, 189, 58, 189, 215,
+    194, 98, 74, 98, 184, 196, 38, 158, 174, 51, 135, 76, 147, 74, 61, 214,
+    178, 94, 233, 190, 216, 78, 115, 83, 39, 99, 226]));
+}
 
 function usage() {
     console.log("usage: strfi.js [init|withdraw|cancel] [accountAddress (needed for withdraw/cancel)]");

@@ -22,15 +22,13 @@ use solana_program::{
     account_info::{next_account_info, AccountInfo},
     entrypoint,
     entrypoint::ProgramResult,
-    fee_calculator::DEFAULT_TARGET_LAMPORTS_PER_SIGNATURE,
     msg,
     native_token::lamports_to_sol,
     program::invoke,
     program_error::ProgramError,
     pubkey::Pubkey,
-    rent::Rent,
     system_instruction,
-    sysvar::{clock::Clock, Sysvar},
+    sysvar::{clock::Clock, fees::Fees, rent::Rent, Sysvar},
 };
 
 /// StreamFlow is the struct containing all our necessary metadata.
@@ -119,12 +117,11 @@ fn initialize_stream(pid: &Pubkey, accounts: &[AccountInfo], ix: &[u8]) -> Progr
     let mut sf = unpack_init_instruction(ix, alice.key, bob.key);
     let struct_size = std::mem::size_of::<StreamFlow>();
 
-    // We transfer also enough to be rent-exempt (about 0.00156 SOL) to the
+    // We also transfer enough to be rent-exempt (about 0.00156 SOL) to the
     // new account. After all funds are withdrawn and unlocked, this might
     // be returned to the initializer or put in another pool for future reuse.
-    let rent_min = Rent::default().minimum_balance(struct_size);
-
-    if alice.lamports() < sf.amount + rent_min {
+    let cluster_rent = Rent::get()?;
+    if alice.lamports() < sf.amount + cluster_rent.minimum_balance(struct_size) {
         msg!("Not enough funds in sender's account to initialize stream");
         return Err(ProgramError::InsufficientFunds);
     }
@@ -148,7 +145,7 @@ fn initialize_stream(pid: &Pubkey, accounts: &[AccountInfo], ix: &[u8]) -> Progr
         &system_instruction::create_account(
             &alice.key,
             &pda.key,
-            sf.amount + rent_min,
+            sf.amount + cluster_rent.minimum_balance(struct_size),
             struct_size as u64,
             &pid,
         ),
@@ -157,9 +154,10 @@ fn initialize_stream(pid: &Pubkey, accounts: &[AccountInfo], ix: &[u8]) -> Progr
 
     // Send enough for one transaction to Bob, so Bob can do an initial
     // withdraw without having previous funds on their account.
-    **pda.try_borrow_mut_lamports()? -= DEFAULT_TARGET_LAMPORTS_PER_SIGNATURE;
-    **bob.try_borrow_mut_lamports()? += DEFAULT_TARGET_LAMPORTS_PER_SIGNATURE;
-    sf.withdrawn += DEFAULT_TARGET_LAMPORTS_PER_SIGNATURE;
+    let fees = Fees::get()?;
+    **pda.try_borrow_mut_lamports()? -= fees.fee_calculator.lamports_per_signature * 2;
+    **bob.try_borrow_mut_lamports()? += fees.fee_calculator.lamports_per_signature * 2;
+    sf.withdrawn += fees.fee_calculator.lamports_per_signature * 2;
 
     // Write our metadata to pda's data.
     let mut data = pda.try_borrow_mut_data()?;

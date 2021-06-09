@@ -6,6 +6,8 @@ This repository contains the Solana program source code.
 It is laid out as a standard crate, and the program code can be found
 in [src/lib.rs](src/lib.rs).
 
+![Build and tests](https://github.com/streamflow-finance/streamflow-program/actions/workflows/rust-tests.yml/badge.svg)
+
 
 Deployment
 ----------

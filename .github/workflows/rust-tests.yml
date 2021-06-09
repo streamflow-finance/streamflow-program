@@ -20,7 +20,7 @@ jobs:
 
             - name: Install Solana command-line tools
               run: |
-                sh -c "$(curl -sSfL https://release.solana.com/edge/install)"
+                sh -c "$(curl -sSfL https://release.solana.com/beta/install)"
 
             - name: Compile and test program
               run: |

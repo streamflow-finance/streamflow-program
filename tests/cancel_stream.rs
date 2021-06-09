@@ -91,9 +91,10 @@ async fn test_cancel_stream() {
 
     transaction.sign(&[&payer, &alice], recent_blockhash);
 
-    let ret = banks_client.process_transaction(transaction).await;
-    match ret {
+    match banks_client.process_transaction(transaction).await {
         Ok(()) => (),
         Err(e) => panic!("{}", e),
     }
+
+    // TODO: Asserts
 }

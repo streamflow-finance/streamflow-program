@@ -126,18 +126,14 @@ fn initialize_stream(pid: &Pubkey, accounts: &[AccountInfo], ix: &[u8]) -> Progr
         return Err(ProgramError::InsufficientFunds);
     }
 
-    match Clock::get() {
-        Ok(v) => {
-            if sf.start_time < v.unix_timestamp as u64 || sf.start_time >= sf.end_time {
-                msg!("Timestamps are invalid!");
-                msg!("Solana cluster time: {}", v.unix_timestamp);
-                msg!("Stream start time:   {}", sf.start_time);
-                msg!("Stream end time:     {}", sf.end_time);
-                msg!("Stream duration:     {}", sf.end_time - sf.start_time);
-                return Err(ProgramError::InvalidArgument);
-            }
-        }
-        Err(e) => return Err(e),
+    let now = Clock::get()?.unix_timestamp as u64;
+    if sf.start_time < now || sf.start_time >= sf.end_time {
+        msg!("Timestamps are invalid!");
+        msg!("Solana cluster time: {}", now);
+        msg!("Stream start time:   {}", sf.start_time);
+        msg!("Stream end time:     {}", sf.end_time);
+        msg!("Stream duration:     {}", sf.end_time - sf.start_time);
+        return Err(ProgramError::InvalidArgument);
     }
 
     // Create the account holding locked funds and data
@@ -189,14 +185,10 @@ fn withdraw_unlocked(pid: &Pubkey, accounts: &[AccountInfo], ix: &[u8]) -> Progr
     }
 
     // Hardcoded rent collector
-    match Pubkey::from_str("DrFtxPb9F6SxpHHHFiEtSNXE3SZCUNLXMaHS6r8pkoz2") {
-        Ok(v) => {
-            if lld.key != &v {
-                msg!("Got unexpected rent collection account");
-                return Err(ProgramError::InvalidAccountData);
-            }
-        }
-        _ => return Err(ProgramError::Custom(4242)),
+    let rent_reaper = Pubkey::from_str("DrFtxPb9F6SxpHHHFiEtSNXE3SZCUNLXMaHS6r8pkoz2").unwrap();
+    if lld.key != &rent_reaper {
+        msg!("Got unexpected rent collection account");
+        return Err(ProgramError::InvalidAccountData);
     }
 
     if !bob.is_signer || !bob.is_writable || !pda.is_writable || !lld.is_writable {
@@ -216,11 +208,7 @@ fn withdraw_unlocked(pid: &Pubkey, accounts: &[AccountInfo], ix: &[u8]) -> Progr
     }
 
     // Current cluster time used to calculate unlocked amount.
-    let now: u64;
-    match Clock::get() {
-        Ok(v) => now = v.unix_timestamp as u64,
-        Err(e) => return Err(e),
-    }
+    let now = Clock::get()?.unix_timestamp as u64;
 
     let amount_unlocked = calculate_streamed(now, sf.start_time, sf.end_time, sf.amount);
     let mut available = amount_unlocked - sf.withdrawn;
@@ -310,11 +298,7 @@ fn cancel_stream(pid: &Pubkey, accounts: &[AccountInfo], _ix: &[u8]) -> ProgramR
     }
 
     // Current cluster time used to calculate unlocked amount.
-    let now: u64;
-    match Clock::get() {
-        Ok(v) => now = v.unix_timestamp as u64,
-        Err(e) => return Err(e),
-    }
+    let now = Clock::get()?.unix_timestamp as u64;
 
     // Transfer what was unlocked but not withdrawn to Bob.
     let amount_unlocked = calculate_streamed(now, sf.start_time, sf.end_time, sf.amount);

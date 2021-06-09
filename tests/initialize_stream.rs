@@ -82,9 +82,6 @@ async fn test_initialize_stream() {
         },
     );
 
-    let slic = unsafe { any_as_u8_slice(&dat) };
-    println!("LEN: {}", slic.len());
-
     program_test.add_account(
         pda.pubkey(),
         Account {
@@ -112,9 +109,10 @@ async fn test_initialize_stream() {
 
     transaction.sign(&[&payer, &alice, &pda], recent_blockhash);
 
-    let ret = banks_client.process_transaction(transaction).await;
-    match ret {
+    match banks_client.process_transaction(transaction).await {
         Ok(()) => (),
         Err(e) => panic!("{}", e),
     }
+
+    // TODO: Asserts
 }

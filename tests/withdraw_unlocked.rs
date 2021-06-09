@@ -97,9 +97,10 @@ async fn test_withdraw_unlocked() {
 
     transaction.sign(&[&payer, &bob], recent_blockhash);
 
-    let ret = banks_client.process_transaction(transaction).await;
-    match ret {
+    match banks_client.process_transaction(transaction).await {
         Ok(()) => (),
         Err(e) => panic!("{}", e),
     }
+
+    // TODO: Asserts
 }

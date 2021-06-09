@@ -1,6 +1,6 @@
 [package]
 name = "streamflow"
-version = "0.1.0"
+version = "0.1.1"
 description = "Solana program for streamflow.finance"
 authors = ["StreamFlow Developers <hello@streamflow.finance>"]
 repository = "https://github.com/streamflow-finance/streamflow-program"
@@ -9,11 +9,11 @@ license = "AGPL-3"
 edition = "2018"
 
 [dependencies]
-solana-program = "1.7"
+solana-program = "1.7.1"
 
 [dev-dependencies]
-solana-program-test = "1.7"
-solana-sdk = "1.7"
+solana-program-test = "1.7.1"
+solana-sdk = "1.7.1"
 
 [lib]
 crate-type = ["cdylib", "lib"]

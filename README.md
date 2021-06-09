@@ -6,7 +6,13 @@ This repository contains the Solana program source code.
 It is laid out as a standard crate, and the program code can be found
 in [src/lib.rs](src/lib.rs).
 
-On Solana Devnet, the program ID is: `2DvvSEde36Ch3B52g9hKWDYbfmJimLpJwVBV9Cknypi4`
+
+Deployment
+----------
+
+* On Solana Mainnet, the program is not yet deployed.
+* On Solana Devnet, the program ID is:
+  `2DvvSEde36Ch3B52g9hKWDYbfmJimLpJwVBV9Cknypi4`
 
 
 Usage

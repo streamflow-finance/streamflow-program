@@ -9,7 +9,8 @@
 
 set -e
 
-git checkout "$(git describe --tags)"
+latest_tag=$(grep '^version ' Cargo.toml | cut -d' ' -f3 | tr -d'"')
+git checkout "$latest_tag"
 rm -rf target chain_bin.so
 cargo build-bpf
 
@@ -19,7 +20,7 @@ solana program -u devnet dump \
 size_of_chain_elf="$(wc -c chain_bin.so | cut -d' ' -f1)"
 size_of_local_elf="$(wc -c target/deploy/streamflow.so | cut -d' ' -f1)"
 
-size_diff="$(( $size_of_chain_elf - $size_of_local_elf ))"
+size_diff="$(( size_of_chain_elf - size_of_local_elf ))"
 
 dd if=/dev/zero of=target/deploy/streamflow.so bs=1 count=$size_diff \
 	oflag=append conv=notrunc

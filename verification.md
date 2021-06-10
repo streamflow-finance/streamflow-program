@@ -15,7 +15,7 @@ Clone and build the program from source
 ```
 % git clone https://github.com/streamflow-finance/streamflow-program
 % cd streamflow-program
-% git checkout "$(git describe --tags)"
+% git checkout v0.1.1  # Check the version in Cargo.toml
 % cargo build-bpf
 ```
 

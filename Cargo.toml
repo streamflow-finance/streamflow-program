@@ -1,6 +1,7 @@
 [package]
 name = "streamflow"
 version = "0.1.1"
+homepage = "https://streamflow.finance"
 description = "Solana program for streamflow.finance"
 authors = ["StreamFlow Developers <hello@streamflow.finance>"]
 repository = "https://github.com/streamflow-finance/streamflow-program"

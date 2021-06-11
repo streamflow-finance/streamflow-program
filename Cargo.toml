@@ -6,7 +6,7 @@ description = "Solana program for streamflow.finance"
 authors = ["StreamFlow Developers <hello@streamflow.finance>"]
 repository = "https://github.com/streamflow-finance/streamflow-program"
 readme = "README.md"
-license = "AGPL-3"
+license = "AGPL-3.0-only"
 edition = "2018"
 
 [dependencies]

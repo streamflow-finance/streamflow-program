@@ -16,6 +16,10 @@ Deployment
 * On Solana Devnet, the program ID is:
   `2DvvSEde36Ch3B52g9hKWDYbfmJimLpJwVBV9Cknypi4`
 
+To verify the deployed program corresponds to this source code, have
+a look at the [verification](verification.md) document and the
+[verify_deployment.sh](verify_deployment.sh) shell script.
+
 
 Usage
 -----

@@ -9,13 +9,25 @@
 
 set -e
 
+network="${1:-devnet}"
+program="${2:-2DvvSEde36Ch3B52g9hKWDYbfmJimLpJwVBV9Cknypi4}"
+
+case "$network" in
+devnet|mainnet|mainnet-beta|localhost)
+	;;
+""|*)
+	echo "Error: Invalid Solana cluster: $network"
+	echo "Usage: $(basename "$0") mainnet|devnet|localhost"
+	exit 1
+	;;
+esac
+
 latest_tag=$(grep '^version ' Cargo.toml | cut -d' ' -f3 | tr -d'"')
 git checkout "$latest_tag"
 rm -rf target chain_bin.so
 cargo build-bpf
 
-solana program -u devnet dump \
-	"2DvvSEde36Ch3B52g9hKWDYbfmJimLpJwVBV9Cknypi4" chain_bin.so
+solana program -u devnet dump "$program" chain_bin.so
 
 size_of_chain_elf="$(wc -c chain_bin.so | cut -d' ' -f1)"
 size_of_local_elf="$(wc -c target/deploy/streamflow.so | cut -d' ' -f1)"

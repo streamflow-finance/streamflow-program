@@ -8,6 +8,11 @@ in [src/lib.rs](src/lib.rs).
 
 ![Build and tests](https://github.com/streamflow-finance/streamflow-program/actions/workflows/rust-tests.yml/badge.svg)
 
+Other **StreamFlow Finance** resources:
+- [Platform Demo](https://www.youtube.com/watch?v=7HWzcxu-De0)
+- [Slides](https://streamflow.finance/public/streamflow_slides.pdf)
+- [Website](https://streamflow.finance)
+- [App](https://app.streamflow.finance) ([GitHub repository](https://github.com/streamflow-finance/streamflow-app))
 
 Deployment
 ----------

@@ -32,6 +32,8 @@ pub struct StreamFlow {
     pub sender: [u8; 32],
     /// Pubkey of the funds' recipient
     pub recipient: [u8; 32],
+    /// Pubkey of the token
+    pub token: [u8; 32],
 }
 
 /// Serialize anything to u8 slice.
@@ -44,7 +46,12 @@ pub unsafe fn any_as_u8_slice<T: Sized>(p: &T) -> &[u8] {
 
 /// Deserialize instruction_data into StreamFlow struct.
 /// This is used to read instructions given to us by the program's initializer.
-pub fn unpack_init_instruction(ix: &[u8], alice: &Pubkey, bob: &Pubkey) -> StreamFlow {
+pub fn unpack_init_instruction(
+    ix: &[u8],
+    alice: &Pubkey,
+    bob: &Pubkey,
+    token: &Pubkey,
+) -> StreamFlow {
     StreamFlow {
         start_time: u64::from(u32::from_le_bytes(ix[1..5].try_into().unwrap())),
         end_time: u64::from(u32::from_le_bytes(ix[5..9].try_into().unwrap())),
@@ -52,6 +59,7 @@ pub fn unpack_init_instruction(ix: &[u8], alice: &Pubkey, bob: &Pubkey) -> Strea
         withdrawn: 0,
         sender: alice.to_bytes(),
         recipient: bob.to_bytes(),
+        token: token.to_bytes(),
     }
 }
 
@@ -65,6 +73,7 @@ pub fn unpack_account_data(ix: &[u8]) -> StreamFlow {
         withdrawn: u64::from_le_bytes(ix[24..32].try_into().unwrap()),
         sender: ix[32..64].try_into().unwrap(),
         recipient: ix[64..96].try_into().unwrap(),
+        token: ix[96..128].try_into().unwrap(),
     }
 }
 

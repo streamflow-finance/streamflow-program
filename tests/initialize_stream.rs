@@ -27,7 +27,8 @@ use solana_sdk::{
     transaction::Transaction,
 };
 
-use streamflow::{any_as_u8_slice, process_instruction, StreamFlow};
+use streamflow::process_instruction;
+use streamflow::utils::{any_as_u8_slice, StreamFlow};
 
 #[repr(packed(1))]
 struct StFl {
@@ -72,6 +73,7 @@ async fn test_initialize_stream() {
         withdrawn: 0,
         sender: alice.pubkey().to_bytes(),
         recipient: bob.pubkey().to_bytes(),
+        token: bob.pubkey().to_bytes(), // placeholder
     };
 
     program_test.add_account(
@@ -101,6 +103,7 @@ async fn test_initialize_stream() {
                 AccountMeta::new(alice.pubkey(), true),
                 AccountMeta::new(bob.pubkey(), false),
                 AccountMeta::new(pda.pubkey(), true),
+                AccountMeta::new(bob.pubkey(), false), // placeholder
                 AccountMeta::new(system_program::ID, false),
             ],
         )],

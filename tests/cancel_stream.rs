@@ -27,7 +27,8 @@ use solana_sdk::{
     transaction::Transaction,
 };
 
-use streamflow::{any_as_u8_slice, process_instruction, StreamFlow};
+use streamflow::process_instruction;
+use streamflow::utils::{any_as_u8_slice, StreamFlow};
 
 #[repr(packed(1))]
 struct StFl {
@@ -61,6 +62,7 @@ async fn test_cancel_stream() {
         withdrawn: 0,
         sender: alice.pubkey().to_bytes(),
         recipient: bob.pubkey().to_bytes(),
+        token: bob.pubkey().to_bytes(), // placeholder
     };
 
     program_test.add_account(

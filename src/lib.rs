@@ -14,10 +14,10 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
-mod cancel;
-mod initialize;
-mod utils;
-mod withdraw;
+pub mod cancel;
+pub mod initialize;
+pub mod utils;
+pub mod withdraw;
 
 use solana_program::{
     account_info::AccountInfo, entrypoint, entrypoint::ProgramResult, msg,

@@ -35,6 +35,7 @@ pub fn initialize_stream(pid: &Pubkey, accounts: &[AccountInfo], ix: &[u8]) -> P
     let alice = next_account_info(account_info_iter)?;
     let bob = next_account_info(account_info_iter)?;
     let pda = next_account_info(account_info_iter)?;
+    let token = next_account_info(account_info_iter)?;
     let system_program = next_account_info(account_info_iter)?;
 
     if ix.len() != 17 {
@@ -54,7 +55,7 @@ pub fn initialize_stream(pid: &Pubkey, accounts: &[AccountInfo], ix: &[u8]) -> P
         return Err(ProgramError::MissingRequiredSignature);
     }
 
-    let mut sf = unpack_init_instruction(ix, alice.key, bob.key);
+    let mut sf = unpack_init_instruction(ix, alice.key, bob.key, token.key);
     let struct_size = std::mem::size_of::<StreamFlow>();
 
     // We also transfer enough to be rent-exempt (about 0.00156 SOL) to the

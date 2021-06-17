@@ -33,10 +33,13 @@ use streamflow::utils::{any_as_u8_slice, StreamFlow};
 #[repr(packed(1))]
 struct StFl {
     instruction: u8,
+    start_time: u64,
+    end_time: u64,
+    amount: u64,
 }
 
 #[tokio::test]
-async fn test_cancel_stream() {
+async fn test_initialize_stream() {
     let program_id = Pubkey::from_str(&"streamf1ow111111111111111111111111111111111").unwrap();
 
     let alice = Keypair::new();
@@ -51,25 +54,41 @@ async fn test_cancel_stream() {
         .unwrap()
         .as_secs();
 
-    let sf = StFl { instruction: 2 };
+    let sf = StFl {
+        instruction: 0,
+        start_time: now as u64 + 10,
+        end_time: now as u64 + 20,
+        amount: sol_to_lamports(90.0),
+    };
 
     println!("instruction: {}", { sf.instruction });
+    println!("start_time: {}", { sf.start_time });
+    println!("end_time: {}", { sf.end_time });
+    println!("amount: {}", { sf.amount });
 
     let dat = StreamFlow {
-        start_time: now - 610,
-        end_time: now - 10,
+        start_time: now as u64 + 10,
+        end_time: now as u64 + 20,
         amount: sol_to_lamports(90.0),
         withdrawn: 0,
         sender: alice.pubkey().to_bytes(),
         recipient: bob.pubkey().to_bytes(),
-        token: bob.pubkey().to_bytes(), // placeholder
+        mint: bob.pubkey().to_bytes(),   // placeholder
+        escrow: bob.pubkey().to_bytes(), // placeholder
     };
+
+    program_test.add_account(
+        alice.pubkey(),
+        Account {
+            lamports: sol_to_lamports(1000.0),
+            ..Account::default()
+        },
+    );
 
     program_test.add_account(
         pda.pubkey(),
         Account {
-            owner: program_id,
-            lamports: sol_to_lamports(95.0),
+            lamports: 0,
             data: unsafe { any_as_u8_slice(&dat).to_vec() },
             ..Account::default()
         },
@@ -84,14 +103,15 @@ async fn test_cancel_stream() {
             vec![
                 AccountMeta::new(alice.pubkey(), true),
                 AccountMeta::new(bob.pubkey(), false),
-                AccountMeta::new(pda.pubkey(), false),
+                AccountMeta::new(pda.pubkey(), true),
+                AccountMeta::new(bob.pubkey(), false), // placeholder
                 AccountMeta::new(system_program::ID, false),
             ],
         )],
         Some(&payer.pubkey()),
     );
 
-    transaction.sign(&[&payer, &alice], recent_blockhash);
+    transaction.sign(&[&payer, &alice, &pda], recent_blockhash);
 
     match banks_client.process_transaction(transaction).await {
         Ok(()) => (),

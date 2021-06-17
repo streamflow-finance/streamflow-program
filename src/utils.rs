@@ -15,7 +15,12 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 use std::convert::TryInto;
 
-use solana_program::pubkey::Pubkey;
+use solana_program::{
+    account_info::AccountInfo,
+    entrypoint::ProgramResult,
+    program::{invoke, invoke_signed},
+    pubkey::Pubkey,
+};
 
 /// StreamFlow is the struct containing all our necessary metadata.
 #[repr(C)]
@@ -32,8 +37,11 @@ pub struct StreamFlow {
     pub sender: [u8; 32],
     /// Pubkey of the funds' recipient
     pub recipient: [u8; 32],
-    /// Pubkey of the token
-    pub token: [u8; 32],
+    /// Pubkey of the token mint (can be zeroes for native SOL)
+    pub mint: [u8; 32],
+    /// Pubkey of the account holding the locked tokens
+    /// (should be zeroes for native SOL)
+    pub escrow: [u8; 32],
 }
 
 /// Serialize anything to u8 slice.
@@ -50,7 +58,7 @@ pub fn unpack_init_instruction(
     ix: &[u8],
     alice: &Pubkey,
     bob: &Pubkey,
-    token: &Pubkey,
+    mint: &Pubkey,
 ) -> StreamFlow {
     StreamFlow {
         start_time: u64::from_le_bytes(ix[1..9].try_into().unwrap()),
@@ -59,7 +67,8 @@ pub fn unpack_init_instruction(
         withdrawn: 0,
         sender: alice.to_bytes(),
         recipient: bob.to_bytes(),
-        token: token.to_bytes(),
+        mint: mint.to_bytes(),
+        escrow: mint.to_bytes(),
     }
 }
 
@@ -73,7 +82,8 @@ pub fn unpack_account_data(ix: &[u8]) -> StreamFlow {
         withdrawn: u64::from_le_bytes(ix[24..32].try_into().unwrap()),
         sender: ix[32..64].try_into().unwrap(),
         recipient: ix[64..96].try_into().unwrap(),
-        token: ix[96..128].try_into().unwrap(),
+        mint: ix[96..128].try_into().unwrap(),
+        escrow: ix[96..128].try_into().unwrap(),
     }
 }
 
@@ -83,4 +93,80 @@ pub fn calculate_streamed(now: u64, start: u64, end: u64, amount: u64) -> u64 {
     // The loss however should not matter, as in the end we will simply
     // send everything that is remaining.
     (((now - start) as f64) / ((end - start) as f64) * amount as f64) as u64
+}
+
+/// Structure used to pass parameters to spl_token_init_account()
+pub struct TokenInitializeAccountParams<'a> {
+    /// Account to initialize
+    pub account: AccountInfo<'a>,
+    /// Token mint account
+    pub mint: AccountInfo<'a>,
+    /// Account owner
+    pub owner: AccountInfo<'a>,
+    /// Rent account
+    pub rent: AccountInfo<'a>,
+    /// Token program account
+    pub token_program: AccountInfo<'a>,
+}
+
+/// Used to initialize an SPL token account using given parameters
+pub fn spl_token_init_account(params: TokenInitializeAccountParams<'_>) -> ProgramResult {
+    let TokenInitializeAccountParams {
+        account,
+        mint,
+        owner,
+        rent,
+        token_program,
+    } = params;
+
+    invoke(
+        &spl_token::instruction::initialize_account(
+            token_program.key,
+            account.key,
+            mint.key,
+            owner.key,
+        )?,
+        &[account, mint, owner, rent, token_program],
+    )
+}
+
+/// Structure used to pass parameters to spl_token_transfer()
+pub struct TokenTransferParams<'a: 'b, 'b> {
+    /// Source account
+    pub source: AccountInfo<'a>,
+    /// Destination account
+    pub destination: AccountInfo<'a>,
+    /// Amount of tokens to transfer (keep decimals in mind!)
+    pub amount: u64,
+    /// Account authority
+    pub authority: AccountInfo<'a>,
+    /// Account authority signer seeds
+    pub authority_signer_seeds: &'b [&'b [u8]],
+    /// Token program account
+    pub token_program: AccountInfo<'a>,
+}
+
+/// Used to make a token transfer from A to B using given parameters
+pub fn spl_token_transfer(params: TokenTransferParams<'_, '_>) -> ProgramResult {
+    let TokenTransferParams {
+        source,
+        destination,
+        authority,
+        token_program,
+        amount,
+        authority_signer_seeds,
+    } = params;
+
+    invoke_signed(
+        &spl_token::instruction::transfer(
+            token_program.key,
+            source.key,
+            destination.key,
+            authority.key,
+            &[],
+            amount,
+        )?,
+        &[source, destination, authority, token_program],
+        &[authority_signer_seeds],
+    )
 }

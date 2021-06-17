@@ -68,7 +68,8 @@ async fn test_withdraw_unlocked() {
         withdrawn: 0,
         sender: alice.pubkey().to_bytes(),
         recipient: bob.pubkey().to_bytes(),
-        token: bob.pubkey().to_bytes(), // placeholder
+        mint: bob.pubkey().to_bytes(),   // placeholder
+        escrow: bob.pubkey().to_bytes(), // placeholder
     };
 
     program_test.add_account(

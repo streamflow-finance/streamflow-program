@@ -14,19 +14,21 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
-pub mod cancel;
-pub mod initialize;
+pub mod sol_cancel;
+pub mod sol_initialize;
+pub mod sol_withdraw;
+pub mod tok_initialize;
 pub mod utils;
-pub mod withdraw;
 
 use solana_program::{
     account_info::AccountInfo, entrypoint, entrypoint::ProgramResult, msg,
     program_error::ProgramError, pubkey::Pubkey,
 };
 
-use cancel::cancel_stream;
-use initialize::initialize_stream;
-use withdraw::withdraw_unlocked;
+use sol_cancel::sol_cancel_stream;
+use sol_initialize::sol_initialize_stream;
+use sol_withdraw::sol_withdraw_unlocked;
+use tok_initialize::tok_initialize_stream;
 
 entrypoint!(process_instruction);
 /// The program entrypoint
@@ -43,9 +45,15 @@ pub fn process_instruction(
     );
 
     match instruction_data[0] {
-        0 => initialize_stream(program_id, accounts, instruction_data),
-        1 => withdraw_unlocked(program_id, accounts, instruction_data),
-        2 => cancel_stream(program_id, accounts, instruction_data),
+        // These are for native SOL
+        0 => sol_initialize_stream(program_id, accounts, instruction_data),
+        1 => sol_withdraw_unlocked(program_id, accounts, instruction_data),
+        2 => sol_cancel_stream(program_id, accounts, instruction_data),
+        // These are for SPL tokens
+        3 => tok_initialize_stream(program_id, accounts, instruction_data),
+        // 4 => tok_withdraw_unlocked(program_id, accounts, instruction_data),
+        // 5 => tok_cancel_stream(program_id, accounts, instruction_data),
+        // Invalid
         _ => Err(ProgramError::InvalidArgument),
     }
 }

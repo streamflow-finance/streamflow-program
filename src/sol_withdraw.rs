@@ -30,7 +30,7 @@ use solana_program::{
 use crate::utils::{any_as_u8_slice, calculate_streamed, unpack_account_data};
 
 /// Program function to withdraw unlocked funds.
-pub fn withdraw_unlocked(pid: &Pubkey, accounts: &[AccountInfo], ix: &[u8]) -> ProgramResult {
+pub fn sol_withdraw_unlocked(pid: &Pubkey, accounts: &[AccountInfo], ix: &[u8]) -> ProgramResult {
     msg!("Requested withdraw of unlocked funds");
     let account_info_iter = &mut accounts.iter();
     let bob = next_account_info(account_info_iter)?;

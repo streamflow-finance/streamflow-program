@@ -28,9 +28,9 @@ use solana_program::{
 
 use crate::utils::{any_as_u8_slice, unpack_init_instruction, StreamFlow};
 
-/// Program function to initialize a stream of funds.
-pub fn initialize_stream(pid: &Pubkey, accounts: &[AccountInfo], ix: &[u8]) -> ProgramResult {
-    msg!("Requested stream initialization");
+/// Program function to initialize a stream of native SOL.
+pub fn sol_initialize_stream(pid: &Pubkey, accounts: &[AccountInfo], ix: &[u8]) -> ProgramResult {
+    msg!("Requested native SOL initialize_stream");
     let account_info_iter = &mut accounts.iter();
     let alice = next_account_info(account_info_iter)?;
     let bob = next_account_info(account_info_iter)?;

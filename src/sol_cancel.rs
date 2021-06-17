@@ -27,7 +27,7 @@ use solana_program::{
 use crate::utils::{calculate_streamed, unpack_account_data};
 
 /// Program function to cancel an initialized stream of funds.
-pub fn cancel_stream(pid: &Pubkey, accounts: &[AccountInfo], _ix: &[u8]) -> ProgramResult {
+pub fn sol_cancel_stream(pid: &Pubkey, accounts: &[AccountInfo], _ix: &[u8]) -> ProgramResult {
     msg!("Requested stream cancellation");
     let account_info_iter = &mut accounts.iter();
     let alice = next_account_info(account_info_iter)?;

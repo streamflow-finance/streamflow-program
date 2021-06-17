@@ -18,6 +18,7 @@ use std::convert::TryInto;
 use solana_program::{
     account_info::AccountInfo,
     entrypoint::ProgramResult,
+    msg,
     program::{invoke, invoke_signed},
     pubkey::Pubkey,
 };
@@ -93,6 +94,20 @@ pub fn calculate_streamed(now: u64, start: u64, end: u64, amount: u64) -> u64 {
     // The loss however should not matter, as in the end we will simply
     // send everything that is remaining.
     (((now - start) as f64) / ((end - start) as f64) * amount as f64) as u64
+}
+
+/// Do a sanity check with given Unix timestamps.
+pub fn duration_sanity(now: u64, start: u64, end: u64) -> bool {
+    if start < now || start >= end {
+        msg!("Timestamps are invalid!");
+        msg!("Solana cluster time: {}", now);
+        msg!("Stream start time:   {}", start);
+        msg!("Stream end time:     {}", end);
+        msg!("Stream duration:     {}", end - start);
+        return false;
+    }
+
+    return true;
 }
 
 /// Structure used to pass parameters to spl_token_init_account()

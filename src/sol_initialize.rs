@@ -26,7 +26,7 @@ use solana_program::{
     sysvar::{clock::Clock, fees::Fees, rent::Rent, Sysvar},
 };
 
-use crate::utils::{any_as_u8_slice, unpack_init_instruction, StreamFlow};
+use crate::utils::{any_as_u8_slice, duration_sanity, unpack_init_instruction, StreamFlow};
 
 /// Program function to initialize a stream of native SOL.
 pub fn sol_initialize_stream(pid: &Pubkey, accounts: &[AccountInfo], ix: &[u8]) -> ProgramResult {
@@ -35,8 +35,9 @@ pub fn sol_initialize_stream(pid: &Pubkey, accounts: &[AccountInfo], ix: &[u8]) 
     let alice = next_account_info(account_info_iter)?;
     let bob = next_account_info(account_info_iter)?;
     let pda = next_account_info(account_info_iter)?;
-    let token = next_account_info(account_info_iter)?;
     let system_program = next_account_info(account_info_iter)?;
+
+    // TODO: Organize so all sanity checks are before doing something.
 
     if ix.len() != 25 {
         return Err(ProgramError::InvalidInstructionData);
@@ -55,7 +56,7 @@ pub fn sol_initialize_stream(pid: &Pubkey, accounts: &[AccountInfo], ix: &[u8]) 
         return Err(ProgramError::MissingRequiredSignature);
     }
 
-    let mut sf = unpack_init_instruction(ix, alice.key, bob.key, token.key);
+    let mut sf = unpack_init_instruction(ix, alice.key, bob.key, bob.key);
     let struct_size = std::mem::size_of::<StreamFlow>();
 
     // We also transfer enough to be rent-exempt (about 0.00156 SOL) to the
@@ -68,12 +69,7 @@ pub fn sol_initialize_stream(pid: &Pubkey, accounts: &[AccountInfo], ix: &[u8]) 
     }
 
     let now = Clock::get()?.unix_timestamp as u64;
-    if sf.start_time < now || sf.start_time >= sf.end_time {
-        msg!("Timestamps are invalid!");
-        msg!("Solana cluster time: {}", now);
-        msg!("Stream start time:   {}", sf.start_time);
-        msg!("Stream end time:     {}", sf.end_time);
-        msg!("Stream duration:     {}", sf.end_time - sf.start_time);
+    if !duration_sanity(now, sf.start_time, sf.end_time) {
         return Err(ProgramError::InvalidArgument);
     }
 

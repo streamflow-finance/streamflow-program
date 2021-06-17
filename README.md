@@ -48,8 +48,8 @@ in order to issue a withdraw instruction in the future.
 
 * Instruction data:
     * `instruction` (1 byte, u8) (Should be `0` for `initialize_stream`
-    * `start_time` (32 bytes, u32) (Unix timestamp when funds start to be unlocked)
-    * `end_time` (32 bytes, u32) (Unix timestamp when all funds should be unlocked)
+    * `start_time` (64 bytes, u64) (Unix timestamp when funds start to be unlocked)
+    * `end_time` (64 bytes, u64) (Unix timestamp when all funds should be unlocked)
     * `amount` (64 bytes, u64) (Amount of lamports to lock and stream)
 
 * Data saved in the PDA account:

@@ -38,7 +38,7 @@ pub fn initialize_stream(pid: &Pubkey, accounts: &[AccountInfo], ix: &[u8]) -> P
     let token = next_account_info(account_info_iter)?;
     let system_program = next_account_info(account_info_iter)?;
 
-    if ix.len() != 17 {
+    if ix.len() != 25 {
         return Err(ProgramError::InvalidInstructionData);
     }
 

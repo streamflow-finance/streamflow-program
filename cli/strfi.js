@@ -22,6 +22,7 @@
 // with Javascript.
 const BufferLayout = require("buffer-layout");
 const sol = require("@solana/web3.js");
+const spl = require("@solana/spl-token");
 const fs = require('fs');
 
 // Cluster and program address to use
@@ -66,17 +67,15 @@ function usage() {
 // This is the structure for the init instruction
 const initLayout = BufferLayout.struct([
     BufferLayout.u8("instruction"),
-    BufferLayout.u32("starttime"),
-    BufferLayout.u32("endtime"),
-    // N.B. Use something else, this goes up to 2^53
-    BufferLayout.nu64("amount"),
+    BufferLayout.blob(8, "starttime"),
+    BufferLayout.blob(8, "endtime"),
+    BufferLayout.blob(8, "amount"),
 ]);
 
 // This is the structure for the withdraw instruction
 const withdrawLayout = BufferLayout.struct([
     BufferLayout.u8("instruction"),
-    // N.B. Use something else, this goes up to 2^53
-    BufferLayout.nu64("amount"),
+    BufferLayout.blob(8, "amount"),
 ]);
 
 // This is the structure for the cancel instruction
@@ -93,11 +92,11 @@ async function initStream(connection) {
             // 0 means init in the Rust program.
             instruction: 0,
             // Unix timestamp when the stream should start unlocking.
-            starttime: now + 10,
+            starttime: new spl.u64(now + 10).toBuffer(),
             // Unix timestamp when the stream should finish and unlock everything.
-            endtime: now + 610,
+            endtime: new spl.u64(now + 610).toBuffer(),
             // Lamports to stream
-            amount: 100000000,
+            amount: new spl.u64(100000000).toBuffer(),
         },
         data,
     );

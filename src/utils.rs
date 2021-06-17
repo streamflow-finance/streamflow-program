@@ -53,9 +53,9 @@ pub fn unpack_init_instruction(
     token: &Pubkey,
 ) -> StreamFlow {
     StreamFlow {
-        start_time: u64::from(u32::from_le_bytes(ix[1..5].try_into().unwrap())),
-        end_time: u64::from(u32::from_le_bytes(ix[5..9].try_into().unwrap())),
-        amount: u64::from_le_bytes(ix[9..17].try_into().unwrap()),
+        start_time: u64::from_le_bytes(ix[1..9].try_into().unwrap()),
+        end_time: u64::from_le_bytes(ix[9..17].try_into().unwrap()),
+        amount: u64::from_le_bytes(ix[17..25].try_into().unwrap()),
         withdrawn: 0,
         sender: alice.to_bytes(),
         recipient: bob.to_bytes(),

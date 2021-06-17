@@ -33,8 +33,8 @@ use streamflow::utils::{any_as_u8_slice, StreamFlow};
 #[repr(packed(1))]
 struct StFl {
     instruction: u8,
-    start_time: u32,
-    end_time: u32,
+    start_time: u64,
+    end_time: u64,
     amount: u64,
 }
 
@@ -56,8 +56,8 @@ async fn test_initialize_stream() {
 
     let sf = StFl {
         instruction: 0,
-        start_time: now as u32 + 10,
-        end_time: now as u32 + 20,
+        start_time: now as u64 + 10,
+        end_time: now as u64 + 20,
         amount: sol_to_lamports(90.0),
     };
 
@@ -67,8 +67,8 @@ async fn test_initialize_stream() {
     println!("amount: {}", { sf.amount });
 
     let dat = StreamFlow {
-        start_time: now + 10,
-        end_time: now + 20,
+        start_time: now as u64 + 10,
+        end_time: now as u64 + 20,
         amount: sol_to_lamports(90.0),
         withdrawn: 0,
         sender: alice.pubkey().to_bytes(),

@@ -28,7 +28,7 @@ use solana_sdk::{
 use streamflow::utils::any_as_u8_slice;
 
 /// The program address to use.
-const PROGRAM_ID: &'static str = "CGS32yqLUrp6bZVFahprh6dBc6hBLaMoiVcv64D8c98y";
+const PROGRAM_ID: &'static str = "ETNwB99fC4HegvqBcHyvPhsiJ9x336NVTeqS11LBSmiP";
 /// The Cluster RPC URL
 const RPC_ADDR: &'static str = "http://localhost:8899";
 

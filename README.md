@@ -29,7 +29,8 @@ a look at the [verification](verification.md) document and the
 Usage
 -----
 
-See [cli/strfi.js](cli/strfi.js) to get an understanding.
+See [cli/strfi.js](cli/strfi.js) and [examples/strfi.rs](examples/strfi.rs)
+to get an understanding.
 
 ### `initialize_stream`
 

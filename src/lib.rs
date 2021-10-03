@@ -14,24 +14,69 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
-pub mod sol_cancel;
-pub mod sol_initialize;
-pub mod sol_withdraw;
-pub mod tok_initialize;
-pub mod utils;
-
 use solana_program::{
     account_info::AccountInfo, entrypoint, entrypoint::ProgramResult, msg,
     program_error::ProgramError, pubkey::Pubkey,
 };
+use streamflow_timelock::{
+    associated_token::{cancel_token_stream, initialize_token_stream, withdraw_token_stream},
+    native_token::{cancel_native_stream, initialize_native_stream, withdraw_native_stream},
+    state::TokenStreamInstruction,
+};
 
-use sol_cancel::sol_cancel_stream;
-use sol_initialize::sol_initialize_stream;
-use sol_withdraw::sol_withdraw_unlocked;
-use tok_initialize::tok_initialize_stream;
+fn initialize_stream(
+    is_native: bool,
+    pid: &Pubkey,
+    accounts: &[AccountInfo],
+    ix: &[u8],
+) -> ProgramResult {
+    msg!("Deserializing instruction data");
+
+    let si: TokenStreamInstruction;
+
+    match bincode::deserialize::<TokenStreamInstruction>(ix) {
+        Ok(v) => si = v,
+        Err(_) => return Err(ProgramError::InvalidInstructionData),
+    }
+
+    if is_native {
+        initialize_native_stream(pid, accounts, si)
+    } else {
+        initialize_token_stream(pid, accounts, si)
+    }
+}
+
+fn withdraw_stream(
+    is_native: bool,
+    pid: &Pubkey,
+    accounts: &[AccountInfo],
+    ix: &[u8],
+) -> ProgramResult {
+    msg!("Deserializing instruction data");
+
+    let amount: u64;
+
+    match bincode::deserialize::<u64>(ix) {
+        Ok(v) => amount = v,
+        Err(_) => return Err(ProgramError::InvalidInstructionData),
+    }
+
+    if is_native {
+        withdraw_native_stream(pid, accounts, amount)
+    } else {
+        withdraw_token_stream(pid, accounts, amount)
+    }
+}
+
+fn cancel_stream(is_native: bool, pid: &Pubkey, accounts: &[AccountInfo]) -> ProgramResult {
+    if is_native {
+        cancel_native_stream(pid, accounts)
+    } else {
+        cancel_token_stream(pid, accounts)
+    }
+}
 
 entrypoint!(process_instruction);
-/// The program entrypoint
 pub fn process_instruction(
     program_id: &Pubkey,
     accounts: &[AccountInfo],
@@ -45,15 +90,13 @@ pub fn process_instruction(
     );
 
     match instruction_data[0] {
-        // These are for native SOL
-        0 => sol_initialize_stream(program_id, accounts, instruction_data),
-        1 => sol_withdraw_unlocked(program_id, accounts, instruction_data),
-        2 => sol_cancel_stream(program_id, accounts, instruction_data),
-        // These are for SPL tokens
-        3 => tok_initialize_stream(program_id, accounts, instruction_data),
-        // 4 => tok_withdraw_unlocked(program_id, accounts, instruction_data),
-        // 5 => tok_cancel_stream(program_id, accounts, instruction_data),
-        // Invalid
+        // true means native SOL; false means SPL token
+        0 => initialize_stream(true, program_id, accounts, &instruction_data[1..]),
+        1 => withdraw_stream(true, program_id, accounts, &instruction_data[1..]),
+        2 => cancel_stream(true, program_id, accounts),
+        3 => initialize_stream(false, program_id, accounts, &instruction_data[1..]),
+        4 => withdraw_stream(false, program_id, accounts, &instruction_data[1..]),
+        5 => cancel_stream(false, program_id, accounts),
         _ => Err(ProgramError::InvalidArgument),
     }
 }

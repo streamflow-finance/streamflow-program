@@ -15,13 +15,20 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 use solana_program::{
-    account_info::AccountInfo, entrypoint, entrypoint::ProgramResult, msg,
-    program_error::ProgramError, pubkey::Pubkey,
+    account_info::{next_account_info, AccountInfo},
+    entrypoint,
+    entrypoint::ProgramResult,
+    msg,
+    program_error::ProgramError,
+    pubkey::Pubkey,
 };
 use streamflow_timelock::{
     associated_token::{cancel_token_stream, initialize_token_stream, withdraw_token_stream},
     native_token::{cancel_native_stream, initialize_native_stream, withdraw_native_stream},
-    state::TokenStreamInstruction,
+    state::{
+        NativeStreamCancelAccounts, NativeStreamInitAccounts, NativeStreamWithdrawAccounts,
+        StreamInstruction,
+    },
 };
 
 fn initialize_stream(
@@ -31,16 +38,26 @@ fn initialize_stream(
     ix: &[u8],
 ) -> ProgramResult {
     msg!("Deserializing instruction data");
-
-    let si: TokenStreamInstruction;
-
-    match bincode::deserialize::<TokenStreamInstruction>(ix) {
-        Ok(v) => si = v,
+    let si = match bincode::deserialize::<StreamInstruction>(ix) {
+        Ok(v) => v,
         Err(_) => return Err(ProgramError::InvalidInstructionData),
-    }
+    };
 
     if is_native {
-        initialize_native_stream(pid, accounts, si)
+        let account_info_iter = &mut accounts.iter();
+        let sender_wallet = next_account_info(account_info_iter)?;
+        let recipient_wallet = next_account_info(account_info_iter)?;
+        let escrow_account = next_account_info(account_info_iter)?;
+        let system_program_account = next_account_info(account_info_iter)?;
+
+        let acc = NativeStreamInitAccounts {
+            sender_wallet: sender_wallet.clone(),
+            recipient_wallet: recipient_wallet.clone(),
+            escrow_account: escrow_account.clone(),
+            system_program_account: system_program_account.clone(),
+        };
+
+        initialize_native_stream(pid, acc, si)
     } else {
         initialize_token_stream(pid, accounts, si)
     }
@@ -62,7 +79,18 @@ fn withdraw_stream(
     }
 
     if is_native {
-        withdraw_native_stream(pid, accounts, amount)
+        let account_info_iter = &mut accounts.iter();
+        let sender_wallet = next_account_info(account_info_iter)?;
+        let recipient_wallet = next_account_info(account_info_iter)?;
+        let escrow_account = next_account_info(account_info_iter)?;
+
+        let acc = NativeStreamWithdrawAccounts {
+            sender_wallet: sender_wallet.clone(),
+            recipient_wallet: recipient_wallet.clone(),
+            escrow_account: escrow_account.clone(),
+        };
+
+        withdraw_native_stream(pid, acc, amount)
     } else {
         withdraw_token_stream(pid, accounts, amount)
     }
@@ -70,7 +98,18 @@ fn withdraw_stream(
 
 fn cancel_stream(is_native: bool, pid: &Pubkey, accounts: &[AccountInfo]) -> ProgramResult {
     if is_native {
-        cancel_native_stream(pid, accounts)
+        let account_info_iter = &mut accounts.iter();
+        let sender_wallet = next_account_info(account_info_iter)?;
+        let recipient_wallet = next_account_info(account_info_iter)?;
+        let escrow_account = next_account_info(account_info_iter)?;
+
+        let acc = NativeStreamCancelAccounts {
+            sender_wallet: sender_wallet.clone(),
+            recipient_wallet: recipient_wallet.clone(),
+            escrow_account: escrow_account.clone(),
+        };
+
+        cancel_native_stream(pid, acc)
     } else {
         cancel_token_stream(pid, accounts)
     }
